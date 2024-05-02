@@ -10,8 +10,9 @@ How to run:
 
 - From your device main menu -> RA Game -> APPS -> SimpleTerminal (or SimpleTerminal-HighRes)
 
-
-
+<img src="images/st-img1.jpeg?raw=true" alt="Image1" width="250"/>
+<img src="images/st-img2.jpeg?raw=true" alt="Image2" width="250"/>
+<img src="images/st-img3.jpeg?raw=true" alt="Image3" width="250"/>
 --------------------
 st is a simple virtual terminal emulator for X which sucks less.
 
@@ -38,13 +39,16 @@ In order to build st you need the Xlib header files.
 Build
 ------------
 For generic linux:
+
     make
 
 For RG35XX Plus:
+
     ./build-rg35xxplus.sh
     (or run inside rg35xxplus-toolchain docker container: UNION_PLATFORM=rg35xxplus make)
 
 For generic linux (with bigger window size)
+
     UNION_PLATFORM=upscale make
 
 
