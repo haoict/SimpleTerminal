@@ -2115,7 +2115,7 @@ tputc(char *c, int len) {
 				ttywrite(VT102ID, sizeof(VT102ID) - 1);
 				term.esc = 0;
 				break;
-			case 'c': /* RIS -- Reset to inital state */
+			case 'c': /* RIS -- Reset to initial state */
 				treset();
 				term.esc = 0;
 				sdlresettitle();
