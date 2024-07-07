@@ -3,8 +3,13 @@ st - simple terminal
 
 How to install:
 
+RG35XX-Plus/H
 - Extract the downloaded zip file
 - Copy the files to "Roms/APPS/" folder
+
+TRIMUI Smart Pro
+- Download the .zip file and extract to the SDCARD Apps folder:
+Apps\SimpleTerminal\[files]
 
 How to run:
 
@@ -13,6 +18,9 @@ How to run:
 <img src="images/st-img1.jpeg?raw=true" alt="Image1" width="250"/>
 <img src="images/st-img2.jpeg?raw=true" alt="Image2" width="250"/>
 <img src="images/st-img3.jpeg?raw=true" alt="Image3" width="250"/>
+<img src="images/st-img1-trimuisp.jpg?raw=true" alt="Image1-TrimuiSP" width="250"/>
+
+
 --------------------
 st is a simple virtual terminal emulator for X which sucks less.
 
@@ -73,3 +81,7 @@ See the man page for additional details.
 Credits
 -------
 Based on  Aurélien APTEL <aurelien dot aptel at gmail dot com> bt source code.
+
+And
+https://github.com/jamesofarrell/st-sdl
+
