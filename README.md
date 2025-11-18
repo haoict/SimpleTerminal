@@ -46,18 +46,9 @@ In order to build st you need the Xlib header files.
 
 Build
 ------------
-For generic linux:
-
-    make
-
-For RG35XX Plus:
-
-    ./build-rg35xxplus.sh
-    (or run inside rg35xxplus-toolchain docker container: UNION_PLATFORM=rg35xxplus make)
-
 For generic linux (with bigger window size)
 
-    UNION_PLATFORM=upscale make
+    UNION_PLATFORM=<device> make
 
 
 Running st
@@ -68,15 +59,6 @@ Running st
 Run with High resolution
     HIGH_RES=1 ./build/SimpleTerminal
 
-
-If you don't install st, define TNAME to "xterm" in config.h or make sure to at
-least compile st terminfo entry with the following command:
-
-    tic -s st.info
-
-It should print the path of the compiled terminfo entry. You can
-safely remove it if you don't plan to use st anymore.
-See the man page for additional details.
 
 Credits
 -------

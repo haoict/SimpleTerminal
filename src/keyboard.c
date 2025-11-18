@@ -93,6 +93,88 @@
 #define KEY_ARROW_UP RAW_PLUS
 #define KEY_ARROW_DOWN RAW_MINUS
 
+#elif RGB30_SDL12COMPAT
+
+#define RAW_UP 544
+#define RAW_DOWN 545
+#define RAW_LEFT 546
+#define RAW_RIGHT 547
+#define RAW_A 305
+#define RAW_B 304
+#define RAW_X 307
+#define RAW_Y 308
+#define RAW_START 315
+#define RAW_SELECT 314
+#define RAW_MENU 708
+#define RAW_L1 310
+#define RAW_L2 312
+#define RAW_L3 706
+#define RAW_R1 311
+#define RAW_R2 313
+#define RAW_R3 707
+#define RAW_PLUS 115
+#define RAW_MINUS 114
+#define RAW_POWER 116
+
+#define KEY_UP RAW_UP
+#define KEY_DOWN RAW_DOWN
+#define KEY_LEFT RAW_LEFT
+#define KEY_RIGHT RAW_RIGHT
+#define KEY_ENTER RAW_A
+#define KEY_TOGGLE RAW_R1
+#define KEY_BACKSPACE RAW_B
+#define KEY_SHIFT RAW_L1
+#define KEY_LOCATION RAW_Y
+#define KEY_ACTIVATE RAW_X
+#define KEY_QUIT RAW_MENU
+#define KEY_TAB RAW_SELECT
+#define KEY_RETURN RAW_START
+#define KEY_ARROW_LEFT RAW_L2
+#define KEY_ARROW_RIGHT RAW_R2
+#define KEY_ARROW_UP RAW_PLUS
+#define KEY_ARROW_DOWN RAW_MINUS
+
+#elif H700_SDL12COMPAT
+
+#define RAW_UP 544
+#define RAW_DOWN 545
+#define RAW_LEFT 546
+#define RAW_RIGHT 547
+#define RAW_A 305
+#define RAW_B 304
+#define RAW_X 307
+#define RAW_Y 308
+#define RAW_START 315
+#define RAW_SELECT 314
+#define RAW_MENU 316
+#define RAW_L1 310
+#define RAW_L2 312
+#define RAW_L3 706
+#define RAW_R1 311
+#define RAW_R2 313
+#define RAW_R3 707
+#define RAW_PLUS 115
+#define RAW_MINUS 114
+#define RAW_POWER 116
+
+#define KEY_UP RAW_UP
+#define KEY_DOWN RAW_DOWN
+#define KEY_LEFT RAW_LEFT
+#define KEY_RIGHT RAW_RIGHT
+#define KEY_ENTER RAW_A
+#define KEY_TOGGLE RAW_R1
+#define KEY_BACKSPACE RAW_B
+#define KEY_SHIFT RAW_L1
+#define KEY_LOCATION RAW_Y
+#define KEY_ACTIVATE RAW_X
+#define KEY_QUIT RAW_MENU
+#define KEY_TAB RAW_SELECT
+#define KEY_RETURN RAW_START
+#define KEY_ARROW_LEFT RAW_L2
+#define KEY_ARROW_RIGHT RAW_R2
+#define KEY_ARROW_UP RAW_PLUS
+#define KEY_ARROW_DOWN RAW_MINUS
+
 #elif TRIMUISP
 
 #define RAW_UP 103
@@ -196,7 +278,7 @@
 
 #define KMOD_SYNTHETIC (1 << 13)
 
-static int row_length[NUM_ROWS] = {13, 17, 17, 15, 14, 9};
+static int row_length[NUM_ROWS] = {13, 17, 17, 15, 14, 8};
 
 static SDLKey keys[2][NUM_ROWS][NUM_KEYS] = {
 	{{SDLK_ESCAPE, SDLK_F1, SDLK_F2, SDLK_F3, SDLK_F4, SDLK_F5, SDLK_F6, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_F11, SDLK_F12},
@@ -204,13 +286,13 @@ static SDLKey keys[2][NUM_ROWS][NUM_KEYS] = {
 	 {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, SDLK_LEFTBRACKET, SDLK_RIGHTBRACKET, SDLK_BACKSLASH, SDLK_HOME, SDLK_END, SDLK_DOWN},
 	 {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_SEMICOLON, SDLK_QUOTE, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
 	 {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_COMMA, SDLK_PERIOD, SDLK_SLASH, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-	 {SDLK_LCTRL, SDLK_LSUPER, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RSUPER, SDLK_MENU, SDLK_RCTRL, SDLK_PRINT}},
+	 {SDLK_LCTRL, SDLK_LSUPER, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RSUPER, SDLK_RCTRL, KEY_QUIT}},
 	{{SDLK_ESCAPE, SDLK_F1, SDLK_F2, SDLK_F3, SDLK_F4, SDLK_F5, SDLK_F6, SDLK_F8, SDLK_F9, SDLK_F10, SDLK_F11, SDLK_F12},
 	 {'~', SDLK_EXCLAIM, SDLK_AT, SDLK_HASH, SDLK_DOLLAR, '%', SDLK_CARET, SDLK_AMPERSAND, SDLK_ASTERISK, SDLK_LEFTPAREN, SDLK_RIGHTPAREN, SDLK_UNDERSCORE, SDLK_PLUS, SDLK_BACKSPACE, SDLK_INSERT, SDLK_DELETE, SDLK_UP},
 	 {SDLK_TAB, SDLK_q, SDLK_w, SDLK_e, SDLK_r, SDLK_t, SDLK_y, SDLK_u, SDLK_i, SDLK_o, SDLK_p, '{', '}', '|', SDLK_HOME, SDLK_END, SDLK_DOWN},
 	 {SDLK_CAPSLOCK, SDLK_a, SDLK_s, SDLK_d, SDLK_f, SDLK_g, SDLK_h, SDLK_j, SDLK_k, SDLK_l, SDLK_COLON, SDLK_QUOTEDBL, SDLK_RETURN, SDLK_PAGEUP, SDLK_LEFT},
 	 {SDLK_LSHIFT, SDLK_z, SDLK_x, SDLK_c, SDLK_v, SDLK_b, SDLK_n, SDLK_m, SDLK_LESS, SDLK_GREATER, SDLK_QUESTION, SDLK_RSHIFT, SDLK_PAGEDOWN, SDLK_RIGHT},
-	 {SDLK_LCTRL, SDLK_LSUPER, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RSUPER, SDLK_MENU, SDLK_RCTRL, SDLK_PRINT}}};
+	 {SDLK_LCTRL, SDLK_LSUPER, SDLK_LALT, SDLK_SPACE, SDLK_RALT, SDLK_RSUPER, SDLK_RCTRL, KEY_QUIT}}};
 
 static char *syms[2][NUM_ROWS][NUM_KEYS] = {
 	{{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", NULL},
@@ -218,13 +300,13 @@ static char *syms[2][NUM_ROWS][NUM_KEYS] = {
 	 {"Tab", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\", "Home", "End", " \xde ", NULL},
 	 {"Caps", "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "Enter", "Pg Up", " < ", NULL},
 	 {"Shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", " Shift", "Pg Dn", " > ", NULL},
-	 {"Ctrl", " ", "Alt", "    Space    ", "Alt", " ", "Fn", "Ctrl", "PsS", NULL}},
+	 {"Ctrl", " ", "Alt", "    Space    ", "Alt", " ", "Ctrl", " Exit ", NULL}},
 	{{"Esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", NULL},
 	 {"~ ", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+", "Bsp", "Ins", "Del", " ^ ", NULL},
 	 {"Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "{", "}", "|", "Home", "End", " \xde ", NULL},
 	 {"Caps", "A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "\"", "Enter", "Pg Up", " < ", NULL},
 	 {"Shift", "Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", " Shift", "Pg Dn", " > ", NULL},
-	 {"Ctrl", " ", "Alt", "    Space    ", "Alt", " ", "Fn", "Ctrl", "PsS", NULL}}};
+	 {"Ctrl", " ", "Alt", "    Space    ", "Alt", " ", "Ctrl", " Exit ", NULL}}};
 
 static unsigned char toggled[NUM_ROWS][NUM_KEYS];
 
@@ -461,7 +543,7 @@ int handle_keyboard_event(SDL_Event *event)
 {
 	// printf("handle_keyboard_event: sym: %d, scancode:%d\n",event->key.keysym.sym, event->key.keysym.scancode);
 #if defined(R36S_SDL12COMPAT)
-	// TODO: some keys are regconiized as "`" key. Temporary disable it.
+	// TODO: some keys are regconiized as "`" key. Temporary disable it. (r36s)
 	if (event->key.keysym.sym == SDLK_BACKQUOTE)
 	{
 		return 1;
@@ -477,9 +559,15 @@ int handle_keyboard_event(SDL_Event *event)
 
 	if ((event->key.type == SDL_KEYUP || event->key.type == SDL_KEYDOWN) && event->key.keysym.mod & KMOD_SYNTHETIC)
 	{
-		if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_PRINT)
+		if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == KEY_QUIT)
 		{
-			show_help = 1;
+			// safe exit the program
+			SDL_Event quit_event;
+			quit_event.type = SDL_QUIT;
+			SDL_PushEvent(&quit_event);
+
+			// show_help = 1;
+			
 			// time_t seconds = time(NULL);
 			// char screen_shot_filename[255];
 			// snprintf(screen_shot_filename, 255, "SimpleTerminal-screenshot-%ld.bmp", seconds);
@@ -510,7 +598,7 @@ int handle_keyboard_event(SDL_Event *event)
 
 	if (!active)
 	{
-#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(R36S_SDL12COMPAT)
+#if defined(MIYOOMINI) || defined(TRIMUISMART) || defined(RG35XXPLUS) || defined(SDL12COMPAT)
 		if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED)
 		{
 			if (event->key.keysym.sym == KEY_QUIT)
@@ -678,10 +766,10 @@ int handle_keyboard_event(SDL_Event *event)
 	{
 		if (show_help)
 		{
-			if (event->key.keysym.sym != SDLK_PRINT && event->key.keysym.sym != KEY_ENTER && event->key.keysym.scancode != 0)
-			{
-				show_help = 0;
-			}
+			// if (event->key.keysym.sym != SDLK_PRINT && event->key.keysym.sym != KEY_ENTER && event->key.keysym.scancode != 0)
+			// {
+			show_help = 0;
+			// }
 		}
 		else if (event->key.keysym.sym == KEY_SHIFT)
 		{
