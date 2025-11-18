@@ -1,47 +1,37 @@
-# st - simple terminal
-# See LICENSE file for copyright and license details.
+VERSION ?= 2.0.0
+# compiler and linker
+CROSS_COMPILE ?= 
+CC = ${CROSS_COMPILE}gcc
+SYSROOT ?= $(shell ${CC} --print-sysroot)
+# flags
+CFLAGS = -Os -Wall -I. -I${SYSROOT}/usr/include -DVERSION=\"${VERSION}\" -D_GNU_SOURCE=1 -D_REENTRANT -std=gnu11 -flto -Wno-unused-result
+LDFLAGS = -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -lutil -s
 
-include makefiles/config.mk
 
-ifeq ($(UNION_PLATFORM),rg35xxplus)
-include makefiles/config-rg35xxplus.mk
-else ifeq ($(UNION_PLATFORM),r36s)
-include makefiles/config-r36s.mk
-else ifeq ($(UNION_PLATFORM),upscale)
-include makefiles/config-generic-linux-upscale.mk
-else ifeq ($(UNION_PLATFORM),r36s-sdl12compat)
-include makefiles/config-r36s-sdl12compat.mk
-else ifeq ($(UNION_PLATFORM),buildroot_rgb30)
-include makefiles/config-buildroot-rgb30.mk
-else ifeq ($(UNION_PLATFORM),buildroot_h700)
-include makefiles/config-buildroot-h700.mk
-else ifeq ($(UNION_PLATFORM),buildroot_raspberrypi)
-include makefiles/config-buildroot-raspberrypi.mk
+ifeq ($(PLATFORM),rgb30)
+CFLAGS += -DBR2 -DRGB30
+else ifeq ($(PLATFORM),h700)
+CFLAGS += -DBR2 -DH700
+else ifeq ($(PLATFORM),pi)
+CFLAGS += -DBR2 -DRPI
 endif
 
 SRC = $(wildcard src/*.c)
 
-all: options build
-
-options:
+build:
 	@echo st build options:
-	@echo "UNION_PLATFORM = ${UNION_PLATFORM}"
-	@echo "PREFIX         = ${PREFIX}"
+	@echo "PLATFORM       = ${PLATFORM}"
 	@echo "CROSS_COMPILE  = ${CROSS_COMPILE}"
 	@echo "SYSROOT        = ${SYSROOT}"
-	@echo "CFLAGS   = ${CFLAGS}"
-	@echo "LDFLAGS  = ${LDFLAGS}"
-	@echo "CC       = ${CC}"
-	@echo "SRC      = ${SRC}"
-	@echo "VERSION  = ${VERSION}"
-
-
-build:
-	mkdir -p build
-	${CC} -o build/SimpleTerminal ${SRC} ${CFLAGS} ${LDFLAGS}
+	@echo "CFLAGS         = ${CFLAGS}"
+	@echo "LDFLAGS        = ${LDFLAGS}"
+	@echo "CC             = ${CC}"
+	@echo "SRC            = ${SRC}"
+	@echo "VERSION        = ${VERSION}"
+	${CC} -o simple-terminal ${SRC} ${CFLAGS} ${LDFLAGS}
 
 clean:
 	@echo cleaning
-	rm -rf build
+	rm -f simple-terminal
 
-.PHONY: all options clean
+.PHONY: build clean
