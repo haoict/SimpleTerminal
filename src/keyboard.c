@@ -51,32 +51,34 @@ static int mod_state = 0;
 int active = 1;
 int show_help = 1;
 
-static int embededFontCharWidth;
-static int embededFontCharHeight;
+static int embedded_font_name = 1;  // 1 or 2
+static int embeddedFontCharWidth;
+static int embeddedFontCharHeight;
 static int ttfCharWidth;
 static int ttfCharHeight;
 
-int useEmbededFontForKeyboard = 0;
+int useEmbeddedFontForKeyboard = 0;
 
-void init_keyboard(int _useEmbededFontForKeyboard) {
-    useEmbededFontForKeyboard = _useEmbededFontForKeyboard;
+void init_keyboard(int _embedded_font_name, int _useEmbeddedFontForKeyboard) {
+    embedded_font_name = _embedded_font_name;
+    useEmbeddedFontForKeyboard = _useEmbeddedFontForKeyboard;
     for (int j = 0; j < NUM_ROWS; j++)
         for (int i = 0; i < NUM_KEYS; i++) toggled[j][i] = 0;
     selected_i = selected_j = shifted = location = 0;
     mod_state = 0;
 
-    embededFontCharWidth = get_embeded_font_char_width();
-    embededFontCharHeight = get_embeded_font_char_height();
+    embeddedFontCharWidth = get_embedded_font_char_width(embedded_font_name);
+    embeddedFontCharHeight = get_embedded_font_char_height(embedded_font_name);
     ttfCharWidth = get_ttf_char_width();
     ttfCharHeight = get_ttf_char_height();
 
-    if (is_ttf_loaded()) {
+    if (is_ttf_loaded() && !useEmbeddedFontForKeyboard) {
         syms[0][2][16] = " v ";
         syms[1][2][16] = " v ";
     }
 }
 
-char *help =
+char *help1 =
     "How to use:\n"
     "  ARROWS:     select key from keyboard\n"
     "  A:          press key\n"
@@ -100,6 +102,21 @@ char *help =
     "  mv <f> <d>      move files (dest can be dir)\n"
     "  rm <f>          remove files (use -rf for dir)\n\n";
 
+char *help2 =
+    "How to use:\n"
+    "  ARROWS:     select key from keyboard\n"
+    "  A:          press key\n"
+    "  B:          backspace\n"
+    "  L1:         shift\n"
+    "  R1:         toggle key (for shift/ctrl...)\n"
+    "  Y:          change keyboard location\n"
+    "  X:          show / hide keyboard\n"
+    "  START:      enter\n"
+    "  SELECT:     tab\n"
+    "  L2:         left\n"
+    "  R2:         right\n"
+    "  MENU:       quit\n\n";
+
 #define CREDIT "@haoict (c) 2025"
 
 void draw_keyboard(SDL_Surface *surface) {
@@ -117,10 +134,10 @@ void draw_keyboard(SDL_Surface *surface) {
         if (is_ttf_loaded()) {
             // Use TTF rendering
             draw_string_ttf(surface, "Simple Terminal", 2, 10, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
-            draw_string_ttf_with_linebreak(surface, help, 8, 30, (SDL_Color){128, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
+            draw_string_ttf_with_linebreak(surface, embedded_font_name == 1 ? help1 : help2, 8, 30, (SDL_Color){128, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
         } else {
-            draw_string(surface, "Simple Terminal", 2, 10, sel_toggled_color);
-            draw_string(surface, help, 8, 30, sel_color);
+            draw_string(surface, "Simple Terminal", 2, 10, sel_toggled_color, embedded_font_name);
+            draw_string(surface, embedded_font_name == 1 ? help1 : help2, 8, 30, sel_color, embedded_font_name);
         }
 #ifdef VERSION
         char credit_str[128];
@@ -129,14 +146,14 @@ void draw_keyboard(SDL_Surface *surface) {
             // Use TTF rendering
             draw_string_ttf(surface, credit_str, 2, 400, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
         } else {
-            draw_string(surface, credit_str, 2, 220, sel_toggled_color);
+            draw_string(surface, credit_str, 2, 220, sel_toggled_color, embedded_font_name);
         }
 #else
         if (is_ttf_loaded()) {
             // Use TTF rendering
             draw_string_ttf(surface, CREDIT, 2, 220, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
         } else {
-            draw_string(surface, CREDIT, 2, 220, sel_toggled_color);
+            draw_string(surface, CREDIT, 2, 220, sel_toggled_color, embedded_font_name);
         }
 #endif
         return;
@@ -144,23 +161,23 @@ void draw_keyboard(SDL_Surface *surface) {
 
     if (!active) return;
 
-    if (useEmbededFontForKeyboard || !is_ttf_loaded()) {
+    if (useEmbeddedFontForKeyboard || !is_ttf_loaded()) {
         int total_length = -1;
         for (int i = 0; i < NUM_KEYS && syms[0][0][i]; i++) {
-            total_length += (1 + strlen(syms[0][0][i])) * embededFontCharWidth;
+            total_length += (1 + strlen(syms[0][0][i])) * embeddedFontCharWidth;
         }
         int center_x = (surface->w - total_length) / 2;
-        int x = center_x, y = surface->h - embededFontCharHeight * (NUM_ROWS)-KEYBOARD_PADDING;
+        int x = center_x, y = surface->h - embeddedFontCharHeight * (NUM_ROWS)-KEYBOARD_PADDING;
         if (location == 1) y = KEYBOARD_PADDING;
 
-        SDL_Rect keyboardRect = {x - 4, y - 3, total_length + 3, NUM_ROWS * embededFontCharHeight + 3};
+        SDL_Rect keyboardRect = {x - 4, y - 3, total_length + 3, NUM_ROWS * embeddedFontCharHeight + 3};
         SDL_FillRect(surface, &keyboardRect, bg_color);
 
         for (int j = 0; j < NUM_ROWS; j++) {
             x = center_x;
             for (int i = 0; i < row_length[j]; i++) {
                 int length = strlen(syms[shifted][j][i]);
-                SDL_Rect keyRect = {x - 2, y - 1, length * embededFontCharWidth + embededFontCharWidth - 2, embededFontCharHeight - 1};
+                SDL_Rect keyRect = {x - 2, y - 1, length * embeddedFontCharWidth + embeddedFontCharWidth - 2, embeddedFontCharHeight - 1};
                 if (toggled[j][i]) {
                     if (selected_i == i && selected_j == j) {
                         SDL_FillRect(surface, &keyRect, sel_toggled_color);
@@ -172,10 +189,10 @@ void draw_keyboard(SDL_Surface *surface) {
                 } else {
                     SDL_FillRect(surface, &keyRect, key_color);
                 }
-                draw_string(surface, syms[shifted][j][i], x, y, text_color);
-                x += embededFontCharWidth * (length + 1);
+                draw_string(surface, syms[shifted][j][i], x, y, text_color, embedded_font_name);
+                x += embeddedFontCharWidth * (length + 1);
             }
-            y += embededFontCharHeight;
+            y += embeddedFontCharHeight;
         }
     } else {
         int total_length = -1;
@@ -211,10 +228,7 @@ void draw_keyboard(SDL_Surface *surface) {
                     ttf_shaded_bg = (SDL_Color){128, 128, 128, 255};
                     SDL_FillRect(surface, &keyRect, key_color);
                 }
-                if (is_ttf_loaded()) {
-                    draw_string_ttf(surface, syms[shifted][j][i], x, y - 2, (SDL_Color){0, 0, 0, 255}, ttf_shaded_bg);
-                } else
-                    draw_string(surface, syms[shifted][j][i], x, y, text_color);
+                draw_string_ttf(surface, syms[shifted][j][i], x, y - 2, (SDL_Color){0, 0, 0, 255}, ttf_shaded_bg);
                 x += ttfCharWidth * (length + 1);
             }
             y += ttfCharHeight;

@@ -1,5 +1,5 @@
 # simple-terminal
-Simple Terminal Emulator for embeded Linux handhelds, migrated from SDL1.2 to SDL2 (by haoict)
+Simple Terminal Emulator for embedded Linux handhelds, migrated from SDL1.2 to SDL2 (by haoict)
 
 <img src="images/st-img1.jpeg?raw=true" alt="Image1" width="250"/>
 <img src="images/st-img2.jpeg?raw=true" alt="Image2" width="250"/>
@@ -16,9 +16,8 @@ make
 # Run
 ```bash
 ./simple-terminal
-
-# with some customizations
-./simple-terminal -scale 1 -font font.ttf -fontsize 12 -fontshade 1
+./simple-terminal -font 2 # with alternative embedded font
+./simple-terminal -scale 1 -font /path/to/font.ttf -fontsize 12 -fontshade 1 # with a ttf font
 
 # run commands when open
 ./simple-terminal -e "ls -la" "uname -a" whoami 

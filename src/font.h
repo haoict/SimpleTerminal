@@ -5,10 +5,10 @@
 #include <SDL2/SDL_ttf.h>
 
 /* Bitmap font functions */
-void draw_char(SDL_Surface *surface, unsigned char symbol, int x, int y, unsigned short color);
-void draw_string(SDL_Surface *surface, const char *text, int x, int y, unsigned short color);
-int get_embeded_font_char_width(void);
-int get_embeded_font_char_height(void);
+void draw_char(SDL_Surface *surface, unsigned char symbol, int x, int y, unsigned short color, int embedded_font_name);
+void draw_string(SDL_Surface *surface, const char *text, int x, int y, unsigned short color, int embedded_font_name);
+int get_embedded_font_char_width(int embedded_font_name);
+int get_embedded_font_char_height(int embedded_font_name);
 
 /* TTF font functions */
 int init_ttf_font(const char *font_path, int font_size, int font_shaded);

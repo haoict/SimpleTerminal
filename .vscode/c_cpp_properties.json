@@ -5,7 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/src/**",
-                "${workspaceFolder}/../../output.arm64/host/aarch64-buildroot-linux-gnu/sysroot/usr/include"
+                "/home/haoict/TiniLinux/output.arm64/host/aarch64-buildroot-linux-gnu/sysroot/usr/include"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu11",

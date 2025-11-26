@@ -146,6 +146,7 @@ char **opt_cmd = NULL;
 int opt_cmd_size = 0;
 char *opt_io = NULL;
 
+static int embedded_font_name = 1;  // 1 or 2
 static volatile int thread_should_exit = 0;
 static int shutdown_called = 0;
 
@@ -187,9 +188,9 @@ void sdlloadfonts() {
         mainwindow.charHeight = get_ttf_char_height();
     } else {
         // Fallback to bitmap font
-        mainwindow.charWidth = get_embeded_font_char_width();
-        mainwindow.charHeight = get_embeded_font_char_height();
-        fprintf(stderr, "Using embedded bitmap font (%dx%d)\n", mainwindow.charWidth, mainwindow.charHeight);
+        mainwindow.charWidth = get_embedded_font_char_width(embedded_font_name);
+        mainwindow.charHeight = get_embedded_font_char_height(embedded_font_name);
+        fprintf(stderr, "Using embedded bitmap font %d (%dx%d)\n", embedded_font_name, mainwindow.charWidth, mainwindow.charHeight);
     }
 }
 
@@ -352,7 +353,7 @@ void update_render(void) {
         SDL_Color popupBoxBg = drawingContext.colors[8];
         SDL_Color popupBoxStr = drawingContext.colors[11];
         SDL_FillRect(oskScreen, &rect, SDL_MapRGB(oskScreen->format, popupBoxBg.r, popupBoxBg.g, popupBoxBg.b));
-        draw_string(oskScreen, popupMessage, rect.x + 2, rect.y + 4, SDL_MapRGB(oskScreen->format, popupBoxStr.r, popupBoxStr.g, popupBoxStr.b));
+        draw_string(oskScreen, popupMessage, rect.x + 2, rect.y + 4, SDL_MapRGB(oskScreen->format, popupBoxStr.r, popupBoxStr.g, popupBoxStr.b), embedded_font_name);
     }
     draw_keyboard(oskScreen);  // oskScreen(SW) = console + keyboard
                                // Update texture with screen pixels and render
@@ -494,7 +495,7 @@ void xdraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
             draw_string_ttf(mainwindow.surface, s, winx, winy, *fg, *bg);
         } else {
             // Use bitmap rendering
-            draw_string(mainwindow.surface, s, winx, ys, SDL_MapRGB(mainwindow.surface->format, fg->r, fg->g, fg->b));
+            draw_string(mainwindow.surface, s, winx, ys, SDL_MapRGB(mainwindow.surface->format, fg->r, fg->g, fg->b), embedded_font_name);
         }
     }
 
@@ -940,6 +941,16 @@ int main(int argc, char *argv[]) {
                 if (!isScaleSetByUser) {
                     opt_scale = 1.0;  // if custom font is set, default scale to 1.0
                 }
+
+                if (strcmp(opt_font, "1") == 0) {
+                    opt_font = NULL;
+                    embedded_font_name = 1;
+                    opt_scale = 2.0;
+                } else if (strcmp(opt_font, "2") == 0) {
+                    opt_font = NULL;
+                    embedded_font_name = 2;
+                    opt_scale = 2.0;
+                }
             } else {
                 fprintf(stderr, "Missing argument for -font\n");
                 die(USAGE);
@@ -968,11 +979,11 @@ int main(int argc, char *argv[]) {
             }
             continue;
         }
-        if (strcmp(argv[i], "-useEmbededFontForKeyboard") == 0) {
+        if (strcmp(argv[i], "-useEmbeddedFontForKeyboard") == 0) {
             if (++i < argc) {
-                opt_useEmbededFontForKeyboard = atoi(argv[i]);
+                opt_useEmbeddedFontForKeyboard = atoi(argv[i]);
             } else {
-                fprintf(stderr, "Missing argument for -useEmbededFontForKeyboard\n");
+                fprintf(stderr, "Missing argument for -useEmbeddedFontForKeyboard\n");
                 die(USAGE);
             }
             continue;
@@ -1010,7 +1021,7 @@ int main(int argc, char *argv[]) {
     ttynew();
     create_ttythread();
     scale_to_size((int)(mainwindow.width / opt_scale), (int)(mainwindow.height / opt_scale));
-    init_keyboard(opt_useEmbededFontForKeyboard);
+    init_keyboard(embedded_font_name, opt_useEmbeddedFontForKeyboard);
     mainLoop();
     return 0;
 }

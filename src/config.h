@@ -6,10 +6,10 @@ char defaultShell[] = "/bin/bash";
 static int initial_width = 320;
 static int initial_height = 240;
 static float opt_scale = 2.0;
-static char *opt_font = NULL;
-static int opt_fontsize = 12;
-static int opt_fontshade = 0;
-static int opt_useEmbededFontForKeyboard = 0;
+static char *opt_font = NULL;  // "1" or "2" for embedded fonts, or path to TTF font file
+static int opt_fontsize = 12;  // only used if opt_font is set to a TTF font
+static int opt_fontshade = 0;  // 0=solid, 1=blended, 2=shaded, only used if opt_font is set to a TTF font
+static int opt_useEmbeddedFontForKeyboard = 0;
 
 static const Uint32 BUTTON_HELD_DELAY = 150;  // milliseconds between button triggers when held
 
