@@ -170,14 +170,14 @@ void draw_keyboard(SDL_Surface *surface) {
         int x = center_x, y = surface->h - embeddedFontCharHeight * (NUM_ROWS)-KEYBOARD_PADDING;
         if (location == 1) y = KEYBOARD_PADDING;
 
-        SDL_Rect keyboardRect = {x - 4, y - 3, total_length + 3, NUM_ROWS * embeddedFontCharHeight + 3};
+        SDL_Rect keyboardRect = {x - 4, y - 3, total_length + 3, NUM_ROWS * (embedded_font_name == 3 ? embeddedFontCharHeight + 2 : embeddedFontCharHeight) + 3};
         SDL_FillRect(surface, &keyboardRect, bg_color);
 
         for (int j = 0; j < NUM_ROWS; j++) {
             x = center_x;
             for (int i = 0; i < row_length[j]; i++) {
                 int length = strlen(syms[shifted][j][i]);
-                SDL_Rect keyRect = {x - 2, y - 1, length * embeddedFontCharWidth + embeddedFontCharWidth - 2, embeddedFontCharHeight - 1};
+                SDL_Rect keyRect = {x - 2, y - 1, length * embeddedFontCharWidth + embeddedFontCharWidth - 2, embedded_font_name == 3 ? embeddedFontCharHeight + 1 : embeddedFontCharHeight - 1};
                 if (toggled[j][i]) {
                     if (selected_i == i && selected_j == j) {
                         SDL_FillRect(surface, &keyRect, sel_toggled_color);
@@ -192,7 +192,7 @@ void draw_keyboard(SDL_Surface *surface) {
                 draw_string(surface, syms[shifted][j][i], x, y, text_color, embedded_font_name);
                 x += embeddedFontCharWidth * (length + 1);
             }
-            y += embeddedFontCharHeight;
+            y += embedded_font_name == 3 ? embeddedFontCharHeight + 2 : embeddedFontCharHeight;
         }
     } else {
         int total_length = -1;
