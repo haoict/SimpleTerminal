@@ -127,54 +127,54 @@ extern STREscape strescseq;
 extern int cmdfd;
 
 /* TTY functions */
-void ttynew(void);
-void ttyread(void);
-void ttywrite(const char *s, size_t n);
-void ttyresize(void);
+void tty_new(void);
+void tty_read(void);
+void tty_write(const char *s, size_t n);
+void tty_resize(void);
 
 /* Terminal functions */
-void tclearregion(int x1, int y1, int x2, int y2);
-void tcursor(int mode);
-void tdeletechar(int n);
-void tdeleteline(int n);
-void tinsertblank(int n);
-void tinsertblankline(int n);
-void tmoveto(int x, int y);
-void tnew(int col, int row);
-void tnewline(int first_col);
-void tputtab(bool forward);
-void tputc(char *c, int len);
-void treset(void);
-int tresize(int col, int row);
-void tscrollup(int orig, int n);
-void tscrolldown(int orig, int n);
-void tsetattr(int *attr, int l);
-void tsetchar(char *c, Glyph *attr, int x, int y);
-void tsetscroll(int t, int b);
-void tswapscreen(void);
-void tsetdirt(int top, int bot);
-void tsetmode(bool priv, bool set, int *args, int narg);
-void tfulldirt(void);
+void t_clear_region(int x1, int y1, int x2, int y2);
+void t_cursor(int mode);
+void t_delete_char(int n);
+void t_delete_line(int n);
+void t_insert_blank(int n);
+void t_insert_blank_line(int n);
+void t_move_to(int x, int y);
+void t_new(int col, int row);
+void t_newline(int first_col);
+void t_put_tab(bool forward);
+void t_putc(char *c, int len);
+void t_reset(void);
+int t_resize(int col, int row);
+void t_scroll_up(int orig, int n);
+void t_scroll_down(int orig, int n);
+void t_set_attr(int *attr, int l);
+void t_set_char(char *c, Glyph *attr, int x, int y);
+void t_set_scroll(int t, int b);
+void t_swap_screen(void);
+void t_set_dirt(int top, int bot);
+void t_set_mode(bool priv, bool set, int *args, int narg);
+void t_full_dirt(void);
 
 /* CSI/Escape sequence functions */
-void csidump(void);
-void csihandle(void);
-void csiparse(void);
-void csireset(void);
-void strreset(void);
+void csi_dump(void);
+void csi_handle(void);
+void csi_parse(void);
+void csi_reset(void);
+void str_reset(void);
 
 /* UTF-8 functions */
-int utf8decode(char *c, long *u);
-int utf8encode(long *u, char *c);
-int utf8size(char *s);
-int isfullutf8(char *c, int len);
+int utf8_decode(char *c, long *u);
+int utf8_encode(long *u, char *c);
+int utf8_size(char *s);
+int is_full_utf8(char *c, int len);
 
 /* External dependencies from main.c */
 void die(const char *, ...);
-void *xmalloc(size_t);
-void *xrealloc(void *, size_t);
-void *xcalloc(size_t nmemb, size_t size);
-size_t xwrite(int fd, char *s, size_t len);
+void *x_malloc(size_t);
+void *x_realloc(void *, size_t);
+void *x_calloc(size_t nmemb, size_t size);
+size_t x_write(int fd, char *s, size_t len);
 void redraw(void);
 
 #endif /* VT100_H */
