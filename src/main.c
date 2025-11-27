@@ -954,6 +954,10 @@ int main(int argc, char *argv[]) {
                     opt_font = NULL;
                     embedded_font_name = 3;
                     opt_scale = 2.0;
+                } else if (strcmp(opt_font, "4") == 0) {
+                    opt_font = NULL;
+                    embedded_font_name = 4;
+                    opt_scale = 1.0;
                 }
             } else {
                 fprintf(stderr, "Missing argument for -font\n");
