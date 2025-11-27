@@ -1,21 +1,36 @@
-#include "font.h"
+// Font configurations
+const FONTS = [
+    {
+        name: 'Embedded Font 1',
+        width: 6,
+        height: 6,
+        bytesPerChar: 6,
+        data: null
+    },
+    {
+        name: 'Embedded Font 2',
+        width: 8,
+        height: 8,
+        bytesPerChar: 8,
+        data: null
+    },
+    {
+        name: 'Embedded Font 3',
+        width: 3,
+        height: 5,
+        bytesPerChar: 5,
+        data: null
+    },
+    {
+        name: 'Embedded Font 4',
+        width: 8,
+        height: 10,
+        bytesPerChar: 10,
+        data: null
+    }
+];
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-
-// clang-format off
-// font from https://github.com/nesbox/TIC-80
-// Format: w-h: 6x6 pixel
-/* Example:
-    Character 'A' (ASCII 65)
-    0x70: 01110000 --  ***    
-    0xc8: 11001000 -- **  *   
-    0xc8: 11001000 -- **  *   
-    0xf8: 11111000 -- *****   
-    0xc8: 11001000 -- **  *   
-    0x00  00000000 --         
-*/
-static const unsigned char embedded_font1[] = {
+const embedded_font1 = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0: (Control)
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 1: (Control)
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 2: (Control)
@@ -144,10 +159,9 @@ static const unsigned char embedded_font1[] = {
     0x60, 0x20, 0x30, 0x20, 0x60, 0x00,  // 125: '}'
     0x00, 0x28, 0x50, 0x00, 0x00, 0x00,  // 126: '~'
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 127: DEL
-};
+];
 
-// Format: w-h: 8x8 pixel
-static const unsigned char embedded_font2[] = {
+const embedded_font2 = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0: (Control)
     0x3c, 0x42, 0xa5, 0x81, 0xa5, 0x99, 0x42, 0x3c,  // 1: (Control)
     0x3c, 0x7e, 0xdb, 0xff, 0xff, 0xdb, 0x66, 0x3c,  // 2: (Control)
@@ -212,7 +226,7 @@ static const unsigned char embedded_font2[] = {
     0x00, 0x00, 0xf8, 0x00, 0xf8, 0x00, 0x00, 0x00,  // 61: '='
     0x00, 0x40, 0x20, 0x10, 0x20, 0x40, 0x00, 0x00,  // 62: '>'
     0x70, 0x88, 0x08, 0x10, 0x20, 0x00, 0x20, 0x00,  // 63: '?'
-    0x00, 0x70, 0xa8, 0xa8, 0xb0, 0x80, 0x70, 0x00,  // 64: '@'
+    0x70, 0x88, 0x08, 0x68, 0xa8, 0xa8, 0x70, 0x00,  // 64: '@'
     0x20, 0x50, 0x88, 0x88, 0xf8, 0x88, 0x88, 0x00,  // 65: 'A'
     0xf0, 0x48, 0x48, 0x70, 0x48, 0x48, 0xf0, 0x00,  // 66: 'B'
     0x30, 0x48, 0x80, 0x80, 0x80, 0x48, 0x30, 0x00,  // 67: 'C'
@@ -276,10 +290,9 @@ static const unsigned char embedded_font2[] = {
     0xc0, 0x20, 0x20, 0x10, 0x20, 0x20, 0xc0, 0x00,  // 125: '}'
     0x40, 0xa8, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,  // 126: '~'
     0x00, 0x00, 0x20, 0x50, 0xf8, 0x00, 0x00, 0x00,  // 127: DEL
-};
+];
 
-// Format: w-h: 3x5 pixel
-static const unsigned char embedded_font3[] = {
+const embedded_font3 = [
     0x00, 0x00, 0x00, 0x00, 0x00,  // 0: (Control)
     0x00, 0x00, 0x00, 0x00, 0x00,  // 1: (Control)
     0x00, 0x00, 0x00, 0x00, 0x00,  // 2: (Control)
@@ -408,10 +421,9 @@ static const unsigned char embedded_font3[] = {
     0x80, 0x40, 0x60, 0x40, 0x80,  // 125: '}'
     0x00, 0x60, 0xc0, 0x00, 0x00,  // 126: '~'
     0x00, 0x00, 0x00, 0x00, 0x00,  // 127: DEL
-};
+];
 
-// Format: w-h: 8x10 pixel
-static const unsigned char embedded_font4[] = {
+const embedded_font4 = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 0: (Control)
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 1: (Control)
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 2: (Control)
@@ -540,186 +552,9 @@ static const unsigned char embedded_font4[] = {
     0x70, 0x18, 0x18, 0x0c, 0x18, 0x18, 0x18, 0x70, 0x00, 0x00,  // 125: '}'
     0x00, 0x00, 0x00, 0x32, 0x7f, 0x4c, 0x00, 0x00, 0x00, 0x00,  // 126: '~'
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 127: DEL
-};
-// clang-format on
+];
 
-/* TTF Font globals */
-static TTF_Font *ttf_font = NULL;
-static int ttf_char_width = 6;   // fallback to bitmap size
-static int ttf_char_height = 8;  // fallback to bitmap size
-static int ttf_font_shade = 0;
-
-/* TTF font */
-int init_ttf_font(const char *font_path, int font_size, int shade) {
-    if (TTF_Init() == -1) {
-        fprintf(stderr, "TTF_Init failed: %s\n", TTF_GetError());
-        return 0;
-    }
-
-    ttf_font = TTF_OpenFont(font_path, font_size);
-    if (!ttf_font) {
-        fprintf(stderr, "Failed to load font '%s': %s\n", font_path, TTF_GetError());
-        TTF_Quit();
-        return 0;
-    }
-
-    // Get font metrics
-    TTF_SizeText(ttf_font, "M", &ttf_char_width, &ttf_char_height);
-    ttf_font_shade = shade;
-
-    fprintf(stderr, "TTF font loaded: %s (size: %d, char: %dx%d), shaded: %d\n", font_path, font_size, ttf_char_width, ttf_char_height, ttf_font_shade);
-
-    return 1;
-}
-
-void cleanup_ttf_font(void) {
-    if (ttf_font) {
-        TTF_CloseFont(ttf_font);
-        ttf_font = NULL;
-        TTF_Quit();
-    }
-}
-
-int is_ttf_loaded(void) { return ttf_font != NULL; }
-
-int get_ttf_char_width(void) { return ttf_char_width; }
-
-int get_ttf_char_height(void) { return ttf_char_height; }
-
-void draw_string_ttf(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg) {
-    if (!ttf_font || !surface || !text) {
-        fprintf(stderr, "Invalid parameters for draw_string_ttf\n");
-        return;
-    }
-    if (strlen(text) == 0) {  // Nothing to draw
-        return;
-    }
-
-    SDL_Surface *text_surface;
-    if (ttf_font_shade == 2) {  // highest quality
-        text_surface = TTF_RenderText_Shaded(ttf_font, text, fg, bg);
-    } else if (ttf_font_shade == 1) {  // medium quality
-        text_surface = TTF_RenderText_Blended(ttf_font, text, fg);
-    } else {
-        text_surface = TTF_RenderText_Solid(ttf_font, text, fg);
-    }
-
-    if (!text_surface) {
-        fprintf(stderr, "TTF_RenderText_Shaded %s failed: %s\n", text, TTF_GetError());
-        return;
-    }
-
-    SDL_Rect dest = {x, y, text_surface->w, text_surface->h};
-    SDL_BlitSurface(text_surface, NULL, surface, &dest);
-    SDL_FreeSurface(text_surface);
-}
-
-void draw_string_ttf_with_linebreak(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg) {
-    if (!ttf_font || !surface || !text) return;
-
-    int line_height = get_ttf_char_height();
-    const char *line_start = text;
-    int cur_y = y;
-    while (*line_start) {
-        // Find next line break
-        const char *line_end = line_start;
-        while (*line_end && *line_end != '\n') line_end++;
-
-        // Copy line to buffer
-        size_t len = line_end - line_start;
-        char line_buf[1024];
-        if (len >= sizeof(line_buf)) len = sizeof(line_buf) - 1;
-        memcpy(line_buf, line_start, len);
-        line_buf[len] = '\0';
-
-        if (len > 0) {
-            draw_string_ttf(surface, line_buf, x, cur_y, fg, bg);
-        }
-
-        if (*line_end == '\n') {
-            cur_y += line_height;
-            line_start = line_end + 1;
-        } else {
-            break;
-        }
-    }
-}
-
-/* Embedded Bitmap font */
-void draw_char(SDL_Surface *surface, unsigned char symbol, int x, int y, unsigned short color, int embedded_font_name) {
-    int flip = 0;
-    if (symbol > 127) {
-        flip = 1;
-        symbol -= 128;
-    }
-
-    const unsigned char *ptr;
-    int rows, start_col, end_col;
-
-    if (embedded_font_name == 2) {
-        ptr = embedded_font2 + symbol * 8;
-        rows = 8;
-        start_col = 2;  // 8 - 6
-        end_col = 8;
-        x += 5;  // 6 - 1
-    } else if (embedded_font_name == 3) {
-        ptr = embedded_font3 + symbol * 5;
-        rows = 5;
-        start_col = 5;  // 8 - 3
-        end_col = 8;
-        x += 2;  // 3 - 1
-    } else if (embedded_font_name == 4) {
-        ptr = embedded_font4 + symbol * 10;
-        rows = 10;
-        start_col = 0;  // 8 - 8
-        end_col = 8;
-        x += 7;  // 8 - 1
-    } else {     // Default to font 1
-        ptr = embedded_font1 + symbol * 6;
-        rows = 6;
-        start_col = 2;  // 8 - 6
-        end_col = 8;
-        x += 5;  // 6 - 1
-    }
-
-    for (int i = 0, ys = 0; i < rows; i++, ptr++, ys += 1)
-        for (int col = start_col, xs = x - (col - start_col); col < end_col; col++, xs -= 1)
-            if ((*ptr & 1 << col) && y + ys < surface->h && xs < surface->w) ((unsigned short *)surface->pixels)[(y + flip * 4 + (1 - 2 * flip) * ys) * (surface->pitch >> 1) + xs] = color;
-}
-
-void draw_string(SDL_Surface *surface, const char *text, int orig_x, int orig_y, unsigned short color, int embedded_font_name) {
-    int x = orig_x, y = orig_y;
-    int char_width = get_embedded_font_char_width(embedded_font_name);
-    int line_height = get_embedded_font_char_height(embedded_font_name);
-
-    while (*text) {
-        if (*text == '\n') {
-            x = orig_x;
-            y += line_height;
-        } else {
-            draw_char(surface, *text, x, y, color, embedded_font_name);
-            x += char_width;
-        }
-        text++;
-    }
-}
-
-int get_embedded_font_char_width(int embedded_font_name) {
-    if (embedded_font_name == 3) {
-        return 4;  // PICO-8 font is 3 pixels wide + 1 spacing
-    } else if (embedded_font_name == 4) {
-        return 8;  // font 4 is 8 pixels wide
-    }
-    return 6;  // fonts 1 and 2 are 6 pixels wide, including build-in spacing
-}
-
-int get_embedded_font_char_height(int embedded_font_name) {
-    if (embedded_font_name == 3) {
-        return 6;  // 5 pixels high + 1 padding
-    } else if (embedded_font_name == 1) {
-        return 8;  // 6 pixels high + 2 padding
-    } else if (embedded_font_name == 4) {
-        return 11;  // 10 pixels high + 1 padding
-    }
-    return 10;  // 8 pixels high + 2 padding
-}
+FONTS[0].data = embedded_font1;
+FONTS[1].data = embedded_font2;
+FONTS[2].data = embedded_font3;
+FONTS[3].data = embedded_font4;

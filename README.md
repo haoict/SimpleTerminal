@@ -41,6 +41,10 @@ export CROSS_COMPILE=/home/haoict/TiniLinux/output.arm64/host/bin/aarch64-buildr
 make
 ```
 
+# To edit embedded bitmap font
+
+https://simple-terminal-psi.vercel.app
+
 # License & Credits
 MIT License  
 Based on  Aurélien APTEL <aurelien dot aptel at gmail dot com> bt source code.  

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitmap Font Editor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Bitmap Font Editor</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="font-select">Font:</label>
+                <select id="font-select">
+                    <option value="0">Embedded Font 1 (6x6)</option>
+                    <option value="1">Embedded Font 2 (8x8)</option>
+                    <option value="2">Embedded Font 3 (3x5)</option>
+                    <option value="3">Embedded Font 4 (8x10)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="char-select">Character:</label>
+                <select id="char-select"></select>
+            </div>
+            
+            <div class="control-group">
+                <label for="ascii-input">Or enter ASCII code (0-127):</label>
+                <input type="number" id="ascii-input" min="0" max="127" value="65">
+            </div>
+
+            <button id="toggle-char-grid" class="toggle-btn">▶ Show All Characters</button>
+            <div id="character-grid" class="collapsed"></div>
+        </div>
+        
+        <div class="editor-section">
+            <div class="matrix-panel">
+                <div id="matrix-container"></div>
+                <div class="matrix-controls">
+                    <button id="undo-btn">Undo</button>
+                    <button id="redo-btn">Redo</button>
+                    <button id="reset-btn">Reset</button>
+                </div>
+            </div>
+            
+            <div class="data-section">
+                <div class="data-display">
+                    <div class="hex-data">
+                        <h4>Hex Bytes</h4>
+                        <code id="hex-output"></code>
+                    </div>
+                </div>
+                <button id="copy-hex-btn">Copy Hex Data</button>
+            </div>
+        </div>
+        
+        <div class="export-section">
+            <h3>Export Font</h3>
+            <button id="export-c-btn">Export as C Array</button>
+        </div>
+    </div>
+    
+    <script src="fonts.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 750px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 8px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2em;
+}
+
+h3 {
+    color: #555;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+h4 {
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9em;
+}
+
+select, input[type="number"] {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+select:hover, input[type="number"]:hover {
+    border-color: #667eea;
+}
+
+select:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Toggle button */
+.toggle-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px 20px;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    background: white;
+    color: #667eea;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: left;
+}
+
+.toggle-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+/* Character Grid */
+#character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 5px;
+    max-width: 100%;
+    margin-top: 10px;
+    max-height: 500px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+#character-grid.collapsed {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+}
+
+.char-grid-break {
+    grid-column: 1 / -1;
+    height: 10px;
+}
+
+.char-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    font-size: 1.1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.char-btn.control-char {
+    font-size: 0.8em;
+    color: #999;
+}
+
+.char-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.char-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #5568d3;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+/* Editor Section */
+.editor-section {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 968px) {
+    .editor-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Matrix Panel */
+.matrix-panel {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+#matrix-container {
+    display: inline-grid;
+    gap: 2px;
+    padding: 15px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.pixel {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    transition: all 0.1s;
+    border-radius: 2px;
+}
+
+.pixel.off {
+    background: white;
+}
+
+.pixel.on {
+    background: #333;
+}
+
+.pixel:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.matrix-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Buttons */
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: white;
+}
+
+#undo-btn {
+    background: #3498db;
+}
+
+#undo-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+#redo-btn {
+    background: #9b59b6;
+}
+
+#redo-btn:hover {
+    background: #8e44ad;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+}
+
+#reset-btn {
+    background: #e74c3c;
+}
+
+#reset-btn:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+#copy-hex-btn {
+    background: #27ae60;
+}
+
+#copy-hex-btn:hover {
+    background: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+}
+
+#export-c-btn, #export-json-btn {
+    background: #667eea;
+}
+
+#export-c-btn:hover, #export-json-btn:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Data Section */
+.data-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.data-display {
+    margin-bottom: 15px;
+}
+
+.hex-data, .binary-data {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 2px solid #ddd;
+}
+
+code {
+    display: block;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #333;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Export Section */
+.export-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
