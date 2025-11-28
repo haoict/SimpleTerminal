@@ -145,7 +145,7 @@ void draw_keyboard(SDL_Surface *surface) {
         if (is_ttf_loaded()) {
             // Use TTF rendering
             draw_string_ttf(surface, credit_str, 2, 400, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
-        } else if (embedded_font_name == 4) {
+        } else if (embedded_font_name == 4 || embedded_font_name == 5) {
             draw_string(surface, credit_str, 2, 290, sel_toggled_color, embedded_font_name);
         } else {
             draw_string(surface, credit_str, 2, 220, sel_toggled_color, embedded_font_name);
@@ -154,7 +154,7 @@ void draw_keyboard(SDL_Surface *surface) {
         if (is_ttf_loaded()) {
             // Use TTF rendering
             draw_string_ttf(surface, CREDIT, 2, 220, (SDL_Color){255, 255, 128, 255}, (SDL_Color){0, 0, 0, 255});
-        } else if (embedded_font_name == 4) {
+        } else if (embedded_font_name == 4 || embedded_font_name == 5) {
             draw_string(surface, CREDIT, 2, 290, sel_toggled_color, embedded_font_name);
         } else {
             draw_string(surface, CREDIT, 2, 220, sel_toggled_color, embedded_font_name);
