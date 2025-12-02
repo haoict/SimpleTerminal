@@ -845,10 +845,8 @@ void draw_string(SDL_Surface *surface, const char *text, int orig_x, int orig_y,
 int get_embedded_font_char_width(int embedded_font_name) {
     if (embedded_font_name == 3) {
         return 4;  // PICO-8 font is 3 pixels wide + 1 spacing
-    } else if (embedded_font_name == 4) {
-        return 8;  // font 4 is 8 pixels wide
-    } else if (embedded_font_name == 5) {
-        return 9;  // font 5 is 8 pixels wide + 1 padding
+    } else if (embedded_font_name == 4 || embedded_font_name == 5) {
+        return 8;  // 8 pixels wide, including build-in spacing
     }
     return 6;  // fonts 1 and 2 are 6 pixels wide, including build-in spacing
 }
@@ -856,10 +854,10 @@ int get_embedded_font_char_width(int embedded_font_name) {
 int get_embedded_font_char_height(int embedded_font_name) {
     if (embedded_font_name == 3) {
         return 6;  // 5 pixels high + 1 padding
-    } else if (embedded_font_name == 1) {
-        return 8;  // 6 pixels high + 2 padding
     } else if (embedded_font_name == 4 || embedded_font_name == 5) {
         return 11;  // 10 pixels high + 1 padding
+    } else if (embedded_font_name == 2) {
+        return 10;  // 8 pixels high + 2 padding
     }
-    return 10;  // 8 pixels high + 2 padding
+    return 8;  // 6 pixels high + 2 padding
 }
