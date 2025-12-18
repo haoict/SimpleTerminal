@@ -29,7 +29,7 @@
 #include "keyboard.h"
 #include "vt100.h"
 
-#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1|2] [-o file] [-q] [-r command ...]\n"
+#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1|2] [-rotate 0|90|180|270] [-o file] [-q] [-r command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -110,6 +110,7 @@ static NonPrintingKeyboardKey non_printing_keyboard_keys[] = {
 /* SDL Surfaces */
 SDL_Surface *screen;
 SDL_Surface *osk_screen;
+SDL_Surface *rotated_screen;   // final frame matching window size
 
 static void draw(void);
 static void draw_region(int, int, int, int);
@@ -215,6 +216,7 @@ void sdl_shutdown(void) {
 
         if (main_window.surface) SDL_FreeSurface(main_window.surface);
         if (osk_screen) SDL_FreeSurface(osk_screen);
+        if (rotated_screen) SDL_FreeSurface(rotated_screen);
         main_window.surface = NULL;
         SDL_JoystickClose(joystick);
         SDL_Quit();
@@ -252,18 +254,24 @@ void scale_to_size(int width, int height) {
 
     // Recreate surfaces
     if (main_window.surface) SDL_FreeSurface(main_window.surface);
-    main_window.surface = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
+    int compose_w = (opt_rotate == 90 || opt_rotate == 270) ? main_window.height : main_window.width;
+    int compose_h = (opt_rotate == 90 || opt_rotate == 270) ? main_window.width : main_window.height;
+    main_window.surface = SDL_CreateRGBSurface(0, compose_w, compose_h, 16, 0xF800, 0x7E0, 0x1F, 0);  // compose buffer
     if (osk_screen) SDL_FreeSurface(osk_screen);
-    osk_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);  // for keyboard mix
+    osk_screen = SDL_CreateRGBSurface(0, compose_w, compose_h, 16, 0xF800, 0x7E0, 0x1F, 0);          // compose + keyboard
+    if (rotated_screen) SDL_FreeSurface(rotated_screen);
+    rotated_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);      // final frame
 
     // Recreate screen surface for compatibility
     if (screen) SDL_FreeSurface(screen);
     screen = SDL_CreateRGBSurface(0, 640, 480, 16, 0xF800, 0x7E0, 0x1F, 0);
 
-    // resize terminal to fit window
+    // resize terminal to fit content buffer (which may be swapped for 90/270)
     int col, row;
-    col = (main_window.width - 2 * borderpx) / main_window.char_width;
-    row = (main_window.height - 2 * borderpx) / main_window.char_height;
+    int content_w = main_window.surface ? main_window.surface->w : main_window.width;
+    int content_h = main_window.surface ? main_window.surface->h : main_window.height;
+    col = (content_w - 2 * borderpx) / main_window.char_width;
+    row = (content_h - 2 * borderpx) / main_window.char_height;
     t_resize(col, row);
     x_resize(col, row);
     tty_resize();
@@ -325,8 +333,11 @@ void sdl_init(void) {
         fprintf(stderr, "Unable to create texture: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
-    main_window.surface = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
-    osk_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);           // for keyboard mix
+    int compose_w = (opt_rotate == 90 || opt_rotate == 270) ? main_window.height : main_window.width;
+    int compose_h = (opt_rotate == 90 || opt_rotate == 270) ? main_window.width : main_window.height;
+    main_window.surface = SDL_CreateRGBSurface(0, compose_w, compose_h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
+    osk_screen = SDL_CreateRGBSurface(0, compose_w, compose_h, 16, 0xF800, 0x7E0, 0x1F, 0);           // for keyboard mix
+    rotated_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);        // final frame after rotation
 
     // Create a temporary surface for the screen to maintain compatibility
     screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);
@@ -347,7 +358,7 @@ void create_tty_thread() {
 void update_render(void) {
     if (main_window.surface == NULL) return;
 
-    memcpy(osk_screen->pixels, main_window.surface->pixels, main_window.width * main_window.height * 2);
+    memcpy(osk_screen->pixels, main_window.surface->pixels, main_window.surface->w * main_window.surface->h * 2);
     if (popup_message[0] != '\0') {
         SDL_Rect rect = {borderpx, main_window.height / 2 - main_window.char_height / 2 - 4, main_window.width - borderpx * 2, main_window.char_height + 6};
         SDL_Color popup_box_bg = drawing_ctx.colors[8];
@@ -356,10 +367,55 @@ void update_render(void) {
         draw_string(osk_screen, popup_message, rect.x + 2, rect.y + 4, SDL_MapRGB(osk_screen->format, popup_box_str.r, popup_box_str.g, popup_box_str.b), embedded_font_name);
     }
     draw_keyboard(osk_screen);  // osk_screen(SW) = console + keyboard
-                                // Update texture with screen pixels and render
-    SDL_UpdateTexture(main_window.texture, NULL, osk_screen->pixels, osk_screen->pitch);
+    // Update texture with screen pixels and render
     SDL_RenderClear(main_window.renderer);
-    SDL_RenderCopy(main_window.renderer, main_window.texture, NULL, NULL);
+    if (opt_rotate == 90 || opt_rotate == 270) {
+        // Ensure rotated_screen matches window size
+        if (!rotated_screen || rotated_screen->w != main_window.width || rotated_screen->h != main_window.height) {
+            if (rotated_screen) SDL_FreeSurface(rotated_screen);
+            rotated_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);
+        }
+
+        // Rotate osk_screen into rotated_screen
+        SDL_LockSurface(osk_screen);
+        SDL_LockSurface(rotated_screen);
+        int sw = osk_screen->w, sh = osk_screen->h;
+        int dpw = rotated_screen->w, dph = rotated_screen->h; // dpw=window width, dph=window height
+        Uint16 *sdata = (Uint16 *)osk_screen->pixels;
+        Uint16 *ddata = (Uint16 *)rotated_screen->pixels;
+        int spitch = osk_screen->pitch / 2;
+        int dpitch = rotated_screen->pitch / 2;
+        if (opt_rotate == 90) {
+            // source (sw=H, sh=W) -> dest (dpw=W, dph=H)
+            for (int y = 0; y < sh; y++) {
+                for (int x = 0; x < sw; x++) {
+                    int dx = dpw - 1 - y;
+                    int dy = x;
+                    ddata[dy * dpitch + dx] = sdata[y * spitch + x];
+                }
+            }
+        } else { // 270 degrees
+            for (int y = 0; y < sh; y++) {
+                for (int x = 0; x < sw; x++) {
+                    int dx = y;
+                    int dy = dph - 1 - x;
+                    ddata[dy * dpitch + dx] = sdata[y * spitch + x];
+                }
+            }
+        }
+        SDL_UnlockSurface(rotated_screen);
+        SDL_UnlockSurface(osk_screen);
+        SDL_UpdateTexture(main_window.texture, NULL, rotated_screen->pixels, rotated_screen->pitch);
+        SDL_RenderCopy(main_window.renderer, main_window.texture, NULL, NULL);
+    } else {
+        // 0 or 180 degrees: upload and render; 180 uses renderer rotation for speed
+        SDL_UpdateTexture(main_window.texture, NULL, osk_screen->pixels, osk_screen->pitch);
+        if (opt_rotate == 0) {
+            SDL_RenderCopy(main_window.renderer, main_window.texture, NULL, NULL);
+        } else { // 180
+            SDL_RenderCopyEx(main_window.renderer, main_window.texture, NULL, NULL, 180.0, NULL, SDL_FLIP_NONE);
+        }
+    }
     SDL_RenderPresent(main_window.renderer);
 }
 
@@ -935,6 +991,21 @@ int main(int argc, char *argv[]) {
             }
             continue;
         }
+        if (strcmp(argv[i], "-rotate") == 0) {
+            if (++i < argc) {
+                int val = atoi(argv[i]);
+                if (val == 0 || val == 90 || val == 180 || val == 270) {
+                    opt_rotate = val;
+                } else {
+                    fprintf(stderr, "Invalid rotate: %s (allowed: 0,90,180,270)\n", argv[i]);
+                    die(USAGE);
+                }
+            } else {
+                fprintf(stderr, "Missing argument for -rotate\n");
+                die(USAGE);
+            }
+            continue;
+        }
         if (strcmp(argv[i], "-font") == 0) {
             if (++i < argc) {
                 opt_font = argv[i];
@@ -1029,7 +1100,11 @@ int main(int argc, char *argv[]) {
     }
 
     sdl_init();
-    t_new((main_window.width - borderpx) / main_window.char_width, (main_window.height - borderpx) / main_window.char_height);
+    {
+        int content_w = main_window.surface ? main_window.surface->w : main_window.width;
+        int content_h = main_window.surface ? main_window.surface->h : main_window.height;
+        t_new((content_w - borderpx) / main_window.char_width, (content_h - borderpx) / main_window.char_height);
+    }
     tty_new();
     create_tty_thread();
     scale_to_size((int)(main_window.width / opt_scale), (int)(main_window.height / opt_scale));

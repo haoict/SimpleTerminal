@@ -19,9 +19,22 @@ make
 ./simple-terminal -font 2 # with alternative embedded font
 ./simple-terminal -scale 1 -font /path/to/font.ttf -fontsize 12 -fontshade 1 # with a ttf font
 
+# rotate content inside the window (0|90|180|270)
+./simple-terminal -rotate 90
+./simple-terminal -rotate 270
+
 # run commands when open
-./simple-terminal -e "ls -la" "uname -a" whoami 
+./simple-terminal -r "ls -la" "uname -a" whoami 
 ```
+
+## Options
+- **-scale**: scale factor for window sizing (e.g., `-scale 2.0`).
+- **-font**: embedded font id (`1..5`) or path to a TTF file.
+- **-fontsize**: TTF font size when using `-font /path/to.ttf`.
+- **-fontshade**: TTF render mode (`0` solid, `1` blended, `2` shaded).
+- **-rotate**: rotate the rendered content only (`0|90|180|270`). For `90` and `270`, characters and on-screen keyboard are rotated while window size stays the same.
+- **-r**: run one or more commands in the terminal on start.
+- **-q**: quiet mode.
 
 # Build with buildroot toolchain
 you can build everything for the target device with buildroot:  
