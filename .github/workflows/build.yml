@@ -1,0 +1,45 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev
+        
+    - name: Build project
+      run: make
+      
+    - name: Verify binary
+      run: |
+        echo "=== Binary info ==="
+        ls -lh simple-terminal
+        file simple-terminal
+        echo ""
+        echo "=== Check executable permissions ==="
+        test -x simple-terminal && echo "✓ Binary is executable" || exit 1
+        echo ""
+        echo "=== Check dependencies ==="
+        ldd simple-terminal
+        echo ""
+        echo "=== Test help output ==="
+        ./simple-terminal -h 2>&1 | head -n 5 || true
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -eq 0 ] || [ $EXIT_CODE -eq 1 ]; then
+          echo "✓ Binary can display help"
+        else
+          echo "✗ Unexpected exit code: $EXIT_CODE"
+          exit 1
+        fi

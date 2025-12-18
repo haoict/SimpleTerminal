@@ -1090,6 +1090,8 @@ int main(int argc, char *argv[]) {
                 active = show_help = 0;
                 break;
             case 'h':  // print help
+                die(USAGE);
+                exit(0);
             default:
                 die(USAGE);
         }
