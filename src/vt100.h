@@ -118,6 +118,12 @@ typedef struct {
     int mode;    /* terminal mode flags */
     int esc;     /* escape state flags */
     bool *tabs;
+    /* Scrollback buffer */
+    Line *scrollback;      /* scrollback buffer */
+    int scrollback_size;   /* max scrollback lines */
+    int scrollback_count;  /* current number of lines in scrollback */
+    int scrollback_pos;    /* current position in circular buffer */
+    int scroll_offset;     /* current scroll offset (0 = bottom) */
 } Term;
 
 /* Global terminal state - extern declarations */
@@ -155,6 +161,14 @@ void t_swap_screen(void);
 void t_set_dirt(int top, int bot);
 void t_set_mode(bool priv, bool set, int *args, int narg);
 void t_full_dirt(void);
+
+/* Scrollback functions */
+void t_scrollback_init(int max_lines);
+void t_scrollback_add_line(Line line);
+void t_scroll_view_up(int n);
+void t_scroll_view_down(int n);
+void t_scroll_view_reset(void);
+int t_get_scroll_offset(void);
 
 /* CSI/Escape sequence functions */
 void csi_dump(void);

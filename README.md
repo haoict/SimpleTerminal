@@ -41,6 +41,16 @@ make
 - **-r**: run one or more commands in the terminal on start.
 - **-q**: quiet mode.
 
+## Features
+
+### Scrollback Buffer
+Simple Terminal supports scrollback history to review previous output:
+- **Buffer size**: 256 lines by default (configurable in `src/config.h` via `scrollback_lines`)
+- **Scroll up**: Press `F8` (PC) or `L2` (handhelds, with OSK deactivated) to scroll up
+- **Scroll down**: Press `F7` (PC) or `R2` (handhelds, with OSK deactivated) to scroll down
+- **Scroll indicator**: When scrolled, a `[offset]^` indicator appears in the top-right corner
+- **Auto-reset**: Any key press (except scroll keys) returns to the bottom of the buffer
+
 # Build with buildroot toolchain
 
 you can build everything for the target device with buildroot:  

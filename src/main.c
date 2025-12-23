@@ -114,6 +114,7 @@ SDL_Surface *rotated_screen;   // final frame matching window size
 
 static void draw(void);
 static void draw_region(int, int, int, int);
+static void draw_scrollbar(void);
 static void main_loop(void);
 int tty_thread(void *unused);
 
@@ -567,6 +568,9 @@ void x_draw_cursor(void) {
     static int oldx = 0, oldy = 0;
     int sl;
     Glyph g = {{' '}, ATTR_NULL, defaultbg, defaultcs, 0};
+    
+    /* Don't draw cursor when scrolled */
+    if (t_get_scroll_offset() > 0) return;
 
     LIMIT(oldx, 0, term.col - 1);
     LIMIT(oldy, 0, term.row - 1);
@@ -603,25 +607,80 @@ void redraw(void) {
 
 void draw(void) {
     draw_region(0, 0, term.col, term.row);
+    draw_scrollbar();
     update_render();
+}
+
+void draw_scrollbar(void) {
+    int scroll_offset = t_get_scroll_offset();
+    if (scroll_offset == 0 || main_window.surface == NULL) return;
+    
+    /* Draw scroll indicator in top-right corner */
+    char scroll_text[64];
+    snprintf(scroll_text, sizeof(scroll_text), "[%d]^", scroll_offset);
+    
+    int text_x = main_window.surface->w - (strlen(scroll_text) * main_window.char_width) - borderpx - 2;
+    int text_y = borderpx;
+    
+    SDL_Color indicator_bg = drawing_ctx.colors[defaultcs];
+    SDL_Color indicator_fg = drawing_ctx.colors[defaultbg];
+    
+    /* Draw background box */
+    SDL_Rect bg_rect = {
+        text_x - 2,
+        text_y - 1,
+        strlen(scroll_text) * main_window.char_width + 4,
+        main_window.char_height + 2
+    };
+    SDL_FillRect(main_window.surface, &bg_rect, SDL_MapRGB(main_window.surface->format, indicator_bg.r, indicator_bg.g, indicator_bg.b));
+    
+    /* Draw text */
+    if (is_ttf_loaded()) {
+        draw_string_ttf(main_window.surface, scroll_text, text_x, text_y, indicator_fg, indicator_bg);
+    } else {
+        draw_string(main_window.surface, scroll_text, text_x, text_y, SDL_MapRGB(main_window.surface->format, indicator_fg.r, indicator_fg.g, indicator_fg.b), embedded_font_name);
+    }
 }
 
 void draw_region(int x1, int y1, int x2, int y2) {
     int ic, ib, x, y, ox, sl;
     Glyph base, new;
     char buf[DRAW_BUF_SIZ];
+    int scroll_offset = t_get_scroll_offset();
+    Line line_to_draw;
 
     if (!(main_window.state & WIN_VISIBLE)) return;
 
     for (y = y1; y < y2; y++) {
         if (!term.dirty[y]) continue;
 
+        /* Determine which line to draw (from scrollback or current screen) */
+        if (scroll_offset > 0 && y < scroll_offset) {
+            /* Draw from scrollback buffer (circular buffer) */
+            int sb_idx = (term.scrollback_pos - scroll_offset + y + term.scrollback_size) % term.scrollback_size;
+            if (sb_idx >= 0 && sb_idx < term.scrollback_count) {
+                line_to_draw = term.scrollback[sb_idx];
+            } else {
+                line_to_draw = term.line[y];
+            }
+        } else {
+            /* Draw from current screen, offset by scroll amount */
+            int screen_y = y - scroll_offset;
+            if (screen_y >= 0 && screen_y < term.row) {
+                line_to_draw = term.line[screen_y];
+            } else {
+                sdl_term_clear(0, y, term.col, y);
+                term.dirty[y] = 0;
+                continue;
+            }
+        }
+
         sdl_term_clear(0, y, term.col, y);
         term.dirty[y] = 0;
-        base = term.line[y][0];
+        base = line_to_draw[0];
         ic = ib = ox = 0;
         for (x = x1; x < x2; x++) {
-            new = term.line[y][x];
+            new = line_to_draw[x];
             if (ib > 0 && (!(new.state & GLYPH_SET) || ATTRCMP(base, new) || ib >= DRAW_BUF_SIZ - UTF_SIZ)) {
                 x_draws(buf, base, ox, y, ic, ib);
                 ic = ib = 0;
@@ -689,6 +748,22 @@ void k_press(SDL_Event *ev) {
     synth = e->keysym.mod & KMOD_SYNTHETIC;
 
     // printf("kpress: keysym=%d scancode=%d mod=%d\n", ksym, e->keysym.scancode, e->keysym.mod);
+
+    /* Handle scroll up/down for scrollback */
+    if (ksym == KEY_SCROLLUP) {
+        t_scroll_view_up(3);
+        draw();  // Force immediate redraw
+        return;
+    } else if (ksym == KEY_SCROLLDOWN) {
+        t_scroll_view_down(3);
+        draw();  // Force immediate redraw
+        return;
+    }
+    
+    /* Reset scroll on any other key press */
+    if (t_get_scroll_offset() > 0) {
+        t_scroll_view_reset();
+    }
 
     if ((non_printing_key = k_map(ksym, e->keysym.mod))) { /* 1. non printing keys from vt100.h */
         // print_non_printing_key_for_debug(non_printing_key, e);

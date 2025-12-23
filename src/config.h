@@ -3,6 +3,9 @@
 static int borderpx = 2;
 char default_shell[] = "/bin/bash";
 
+/* Scrollback configuration */
+int scrollback_lines = 256;  /* Number of lines to keep in scrollback buffer */
+
 static int initial_width = 320;
 static int initial_height = 240;
 static float opt_scale = 2.0;

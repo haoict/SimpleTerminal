@@ -21,6 +21,7 @@ extern unsigned int defaultbg;
 extern unsigned int tabspaces;
 extern char default_shell[];
 extern char termname[];
+extern int scrollback_lines;
 
 /* External variables from main.c */
 extern char *opt_io;
@@ -334,6 +335,8 @@ void t_new(int col, int row) {
         term.dirty[row] = 0;
     }
     memset(term.tabs, 0, term.col * sizeof(*term.tabs));
+    /* initialize scrollback buffer */
+    t_scrollback_init(scrollback_lines);
     /* setup screen */
     t_reset();
 }
@@ -376,6 +379,13 @@ void t_scroll_up(int orig, int n) {
     Line temp;
     LIMIT(n, 0, term.bot - orig + 1);
 
+    /* Save scrolled lines to scrollback buffer (only from top of scroll region) */
+    if (orig == term.top) {
+        for (i = 0; i < n && orig + i <= term.bot; i++) {
+            t_scrollback_add_line(term.line[orig + i]);
+        }
+    }
+
     t_clear_region(0, orig, term.col - 1, orig + n - 1);
 
     for (i = orig; i <= term.bot - n; i++) {
@@ -386,6 +396,9 @@ void t_scroll_up(int orig, int n) {
         term.dirty[i] = 1;
         term.dirty[i + n] = 1;
     }
+    
+    /* Reset scroll view when content scrolls */
+    t_scroll_view_reset();
 }
 
 void t_newline(int first_col) {
@@ -397,6 +410,68 @@ void t_newline(int first_col) {
         y++;
     }
     t_move_to(first_col ? 0 : term.c.x, y);
+}
+
+/* Scrollback buffer functions */
+void t_scrollback_init(int max_lines) {
+    int i;
+    term.scrollback_size = max_lines;
+    term.scrollback_count = 0;
+    term.scrollback_pos = 0;
+    term.scroll_offset = 0;
+    
+    if (max_lines > 0) {
+        term.scrollback = x_malloc(max_lines * sizeof(Line));
+        for (i = 0; i < max_lines; i++) {
+            term.scrollback[i] = x_malloc(term.col * sizeof(Glyph));
+        }
+    } else {
+        term.scrollback = NULL;
+    }
+}
+
+void t_scrollback_add_line(Line line) {
+    if (term.scrollback_size <= 0 || !term.scrollback) return;
+    
+    /* Copy line data to scrollback buffer (circular buffer) */
+    memcpy(term.scrollback[term.scrollback_pos], line, term.col * sizeof(Glyph));
+    
+    /* Update circular buffer position */
+    term.scrollback_pos = (term.scrollback_pos + 1) % term.scrollback_size;
+    
+    /* Update count (max out at scrollback_size) */
+    if (term.scrollback_count < term.scrollback_size) {
+        term.scrollback_count++;
+    }
+}
+
+void t_scroll_view_up(int n) {
+    if (term.scrollback_count == 0) return;
+    
+    term.scroll_offset += n;
+    LIMIT(term.scroll_offset, 0, term.scrollback_count);
+    
+    t_full_dirt();
+}
+
+void t_scroll_view_down(int n) {
+    if (term.scroll_offset == 0) return;
+    
+    term.scroll_offset -= n;
+    LIMIT(term.scroll_offset, 0, term.scrollback_count);
+    
+    t_full_dirt();
+}
+
+void t_scroll_view_reset(void) {
+    if (term.scroll_offset == 0) return;
+    
+    term.scroll_offset = 0;
+    t_full_dirt();
+}
+
+int t_get_scroll_offset(void) {
+    return term.scroll_offset;
 }
 
 void csi_parse(void) {

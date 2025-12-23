@@ -7,10 +7,10 @@ SimpleTerminal is an SDL2-based VT100 terminal emulator for embedded Linux handh
 
 ### Core Components
 - **[src/main.c](../src/main.c)**: SDL2 event loop, rendering pipeline, window management, threading coordination
-- **[src/vt100.c](../src/vt100.c)**: VT100 escape sequence parser, terminal state machine, PTY management
+- **[src/vt100.c](../src/vt100.c)**: VT100 escape sequence parser, terminal state machine, PTY management, scrollback buffer
 - **[src/keyboard.c](../src/keyboard.c)**: On-screen keyboard for handhelds, joystick input mapping
 - **[src/font.c](../src/font.c)**: Dual font system - embedded bitmap fonts + TTF rendering via SDL_ttf
-- **[src/config.h](../src/config.h)**: Runtime configuration (colors, defaults, dimensions)
+- **[src/config.h](../src/config.h)**: Runtime configuration (colors, defaults, dimensions, scrollback size)
 
 ### Threading Model
 - **Main thread**: SDL event loop, rendering (draws terminal + on-screen keyboard)
@@ -118,6 +118,18 @@ All freed/recreated on resize in `scale_to_size()`.
 Array `non_printing_keyboard_keys[]` maps SDL keycodes to escape sequences (e.g., arrow keys → `\033[A`)
 - Use `XK_ANY_MOD` for keys without modifier requirements
 - Modifiers: `KMOD_LALT`, `KMOD_CTRL`, `KMOD_LSHIFT`/`KMOD_RSHIFT`
+
+### Scrollback Buffer
+Circular buffer implementation in vt100.c for viewing terminal history:
+- **Buffer structure**: `term.scrollback[]` array, `scrollback_size` capacity, `scrollback_count` actual lines
+- **Circular indexing**: `scrollback_pos` wraps around using modulo arithmetic
+- **Auto-capture**: Lines scrolled off top of screen are saved to buffer in `t_scroll_up()`
+- **View offset**: `scroll_offset` tracks how far back user has scrolled (0 = live view)
+- **Rendering**: `draw_region()` fetches lines from scrollback when `scroll_offset > 0`
+- **Indicator**: Top-right corner shows `[N]^` when scrolled N lines back
+- **Key bindings**: `KEY_SCROLLUP`/`KEY_SCROLLDOWN` in keyboard.h
+- **Auto-reset**: Any non-scroll key press calls `t_scroll_view_reset()`
+- **Screen isolation**: Only primary screen captures scrollback (alternate screen for apps like vim doesn't)
 
 ## Common Tasks
 

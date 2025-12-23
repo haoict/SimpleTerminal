@@ -395,20 +395,27 @@ int handle_keyboard_event(SDL_Event *event) {
         if (event->key.type == SDL_KEYDOWN && event->key.state == SDL_PRESSED) {
             if (event->key.keysym.sym == JOYBUTTON_UP) {
                 simulate_key(SDLK_UP, STATE_TYPED);
+                return 1;
             } else if (event->key.keysym.sym == JOYBUTTON_DOWN) {
                 simulate_key(SDLK_DOWN, STATE_TYPED);
+                return 1;
             } else if (event->key.keysym.sym == JOYBUTTON_LEFT) {
                 simulate_key(SDLK_LEFT, STATE_TYPED);
+                return 1;
             } else if (event->key.keysym.sym == JOYBUTTON_RIGHT) {
                 simulate_key(SDLK_RIGHT, STATE_TYPED);
+                return 1;
             } else if (event->key.keysym.sym == JOYBUTTON_START || event->key.keysym.sym == JOYBUTTON_A) {
                 simulate_key(SDLK_RETURN, STATE_TYPED);
+                return 1;
             } else if (event->key.keysym.sym == JOYBUTTON_SELECT) {
                 simulate_key(SDLK_TAB, STATE_TYPED);
+                return 1;
             } else if (event->key.keysym.sym == JOYBUTTON_B) {
                 tty_write("\003", 1);  // Ctrl+C
+                return 1;
             }
-            return 1;
+            return 0;
         }
 #endif
         return 0;
