@@ -7,16 +7,7 @@ Simple Terminal Emulator for embedded Linux handhelds, migrated from SDL1.2 to S
 <img src="images/st-img3.jpeg?raw=true" alt="Image3" width="250"/>
 <img src="images/st-img1-trimuisp.jpg?raw=true" alt="Image1-TrimuiSP" width="250"/>
 
-# Build
-
-For generic linux:
-
-```bash
-sudo apt install build-essential libsdl2-dev libsdl2-ttf-dev
-make
-```
-
-# Run
+## Run
 
 ```bash
 ./simple-terminal
@@ -51,9 +42,40 @@ Simple Terminal supports scrollback history to review previous output:
 - **Scroll indicator**: When scrolled, a `[offset]^` indicator appears in the top-right corner
 - **Auto-reset**: Any key press (except scroll keys) returns to the bottom of the buffer
 
-# Build with buildroot toolchain
 
-you can build everything for the target device with buildroot:  
+## Platforms
+
+SimpleTerminal includes built-in input mappings for several embedded handheld devices.
+
+When building for a handheld device, specify the target platform using the PLATFORM variable:
+
+```bash
+make PLATFORM=<platform>
+```
+
+Currently supported platforms include:
+  - `rgb30`
+  - `h700`
+  - `r36s`
+  - `pi` (Raspberry Pi / generic controller)
+
+If no platform is specified, SimpleTerminal builds with a generic Linux keyboard mapping.
+
+Note: The `PLATFORM` option currently only affects controller and keyboard input mappings. Other devices may work correctly if their controller layout matches one of the existing platforms.
+
+
+## Build
+
+### Generic linux
+
+```bash
+sudo apt install build-essential libsdl2-dev libsdl2-ttf-dev
+make
+```
+
+### Build with buildroot toolchain
+
+You can build everything for the target device with buildroot:
 https://github.com/haoict/TiniLinux/blob/master/README.md#build
 
 or build the toolchain only and build simple-terminal separately
@@ -71,7 +93,34 @@ export CROSS_COMPILE=/home/haoict/TiniLinux/output.toolchain_x86_64_aarch64/host
 make
 ```
 
-# To edit embedded bitmap font
+### Build using Podman
+
+You can also build SimpleTerminal using Podman.
+
+```bash
+podman run --rm -it \
+  -v "$PWD:/work:Z" -w /work \
+  docker.io/debian:trixie-slim \
+  bash -lc '
+    set -euo pipefail
+
+    dpkg --add-architecture arm64
+    apt update
+    apt install -y --no-install-recommends \
+      make pkg-config \
+      gcc-aarch64-linux-gnu libc6-dev-arm64-cross \
+      libsdl2-dev:arm64 libsdl2-ttf-dev:arm64
+
+    export CC=aarch64-linux-gnu-gcc
+    export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+    export PKG_CONFIG_SYSROOT_DIR=/
+
+    make clean || true
+    make PLATFORM=r36s CC="$CC"
+  '
+```
+
+## To edit embedded bitmap font
 
 https://simple-terminal-psi.vercel.app
 
