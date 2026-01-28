@@ -5,9 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/src/**",
-                "/home/haoict/TiniLinux/output.toolchain_aarch64_aarch64/host/aarch64-buildroot-linux-gnu/sysroot/usr/include",
-                "/home/haoict/TiniLinux/output.toolchain_x86_64_aarch64/host/aarch64-buildroot-linux-gnu/sysroot/usr/include",
-                "/home/haoict/TiniLinux/output.toolchain_x86_64_x86_64/host/x86_64-buildroot-linux-gnu/sysroot/usr/include"
+                "~/TiniLinux/output.toolchain_aarch64/host/aarch64-buildroot-linux-gnu/sysroot/usr/include",
+                "~/TiniLinux/output.toolchain_x86_64/host/x86_64-buildroot-linux-gnu/sysroot/usr/include"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu11",

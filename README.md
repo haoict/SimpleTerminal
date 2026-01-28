@@ -83,13 +83,13 @@ or build the toolchain only and build simple-terminal separately
 ```bash
 # build toolchain
 cd TiniLinux
-./make-board-build.sh configs/toolchain_x86_64_aarch64_defconfig
-cd output.toolchain_x86_64_aarch64
+./make-board-build.sh configs/toolchain_aarch64_defconfig
+cd output.toolchain_aarch64
 make -j $(nproc)
 
 # build simple-terminal
 cd SimpleTerminal
-export CROSS_COMPILE=/home/haoict/TiniLinux/output.toolchain_x86_64_aarch64/host/bin/aarch64-none-linux-gnu-
+export CROSS_COMPILE=~/TiniLinux/output.toolchain_aarch64/host/bin/aarch64-linux-
 make
 ```
 
