@@ -358,6 +358,14 @@ int handle_keyboard_event(SDL_Event *event) {
         return 1;
     }
 
+    if (event->key.type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_RETURN && selected_j == 5 && selected_i == 9) {
+        printf("Exit event requested by Enter+Exit button\n");
+        SDL_Event quit_event;
+        quit_event.type = SDL_QUIT;
+        SDL_PushEvent(&quit_event);
+        return 1;
+    }
+
     if (event->key.type == SDL_KEYDOWN && !(event->key.keysym.mod & KMOD_SYNTHETIC) && event->key.keysym.sym == KEY_OSKACTIVATE) {
         if (show_help) {
             show_help = 0;
