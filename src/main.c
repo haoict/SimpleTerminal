@@ -479,7 +479,20 @@ void x_clear(int x1, int y1, int x2, int y2) {
 void x_draws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
     int winx = borderpx + x * main_window.char_width, winy = borderpx + y * main_window.char_height, width = charlen * main_window.char_width;
     // TTF_Font *font = drawing_ctx.font;
-    SDL_Color *fg = &drawing_ctx.colors[base.fg], *bg = &drawing_ctx.colors[base.bg], *temp, revfg, revbg;
+    SDL_Color *fg, *bg, *temp, revfg, revbg;
+
+    // Some programs request >256-color drawing that we don't support. Fall back
+    // to defaults in that case.
+    if (BETWEEN(base.fg, 0, LEN(drawing_ctx.colors) - 1)) {
+      fg = &drawing_ctx.colors[base.fg];
+    } else {
+      fg = &drawing_ctx.colors[defaultfg];
+    }
+    if (BETWEEN(base.bg, 0, LEN(drawing_ctx.colors) - 1)) {
+      bg = &drawing_ctx.colors[base.bg];
+    } else {
+      bg = &drawing_ctx.colors[defaultbg];
+    }
 
     s[bytelen] = '\0';
 
