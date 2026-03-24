@@ -57,6 +57,7 @@ Currently supported platforms include:
   - `rgb30`
   - `h700`
   - `r36s`
+  - `rg35xxsp`
   - `pi` (Raspberry Pi / generic controller)
 
 If no platform is specified, SimpleTerminal builds with a generic Linux keyboard mapping.
