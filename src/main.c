@@ -975,6 +975,9 @@ void main_loop(void) {
     int running = 1;
     int button_up_held = 0, button_down_held = 0, button_left_held = 0, button_right_held = 0;
     Uint32 last_button_held_time = 0;
+#if defined(RG35XXSP)
+    Uint8 joy0_hat0_last_state = 0;
+#endif
     while (running) {
         while (SDL_PollEvent(&ev))
         // while (SDL_WaitEvent(&ev))
@@ -1022,6 +1025,42 @@ void main_loop(void) {
                                                }}};
 
                 SDL_PushEvent(&sdl_event);
+#if defined(RG35XXSP)
+            } else if (ev.type == SDL_JOYHATMOTION && ev.jhat.which == 0 &&
+                       ev.jhat.hat == 0) {
+                // The RG35XXSP does not treat the d-pad directions as individual buttons; instead it treats it as a joystick hat.
+                // Here we translate hat events into key events to handle those directions.
+                static const Uint8 HAT_MASKS[] = {
+                  SDL_HAT_LEFT, SDL_HAT_RIGHT, SDL_HAT_UP, SDL_HAT_DOWN,
+                };
+                static const int HAT_BUTTONS[] = {
+                  JOYBUTTON_LEFT, JOYBUTTON_RIGHT, JOYBUTTON_UP, JOYBUTTON_DOWN,
+                };
+                for (int i = 0; i < 4; i++) {
+                    if ((joy0_hat0_last_state & HAT_MASKS[i]) && !(ev.jhat.value & HAT_MASKS[i])) {
+                        SDL_Event sdl_event = {.key = {.type = SDL_KEYUP,
+                                                       .state = SDL_RELEASED,
+                                                       .keysym = {
+                                                           .scancode = HAT_BUTTONS[i],
+                                                           .sym = HAT_BUTTONS[i],
+                                                           .mod = 0,
+                                                       }}};
+
+                        SDL_PushEvent(&sdl_event);
+                    } else if (!(joy0_hat0_last_state & HAT_MASKS[i]) && (ev.jhat.value & HAT_MASKS[i])) {
+                        SDL_Event sdl_event = {.key = {.type = SDL_KEYDOWN,
+                                                       .state = SDL_PRESSED,
+                                                       .keysym = {
+                                                           .scancode = HAT_BUTTONS[i],
+                                                           .sym = HAT_BUTTONS[i],
+                                                           .mod = 0,
+                                                       }}};
+
+                        SDL_PushEvent(&sdl_event);
+                    }
+                }
+                joy0_hat0_last_state = ev.jhat.value;
+#endif
             } else {
                 if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
             }

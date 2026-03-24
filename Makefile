@@ -12,6 +12,8 @@ ifeq ($(PLATFORM),rgb30)
 CFLAGS += -DBR2 -DRGB30
 else ifeq ($(PLATFORM),h700)
 CFLAGS += -DBR2 -DH700
+else ifeq ($(PLATFORM),rg35xxsp)
+CFLAGS += -DBR2 -DRG35XXSP
 else ifeq ($(PLATFORM),r36s)
 CFLAGS += -DBR2 -DR36S
 else ifeq ($(PLATFORM),pi)
