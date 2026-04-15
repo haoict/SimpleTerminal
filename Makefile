@@ -20,6 +20,13 @@ endif
 
 SRC = $(wildcard src/*.c)
 
+ifeq ($(FB),1)
+CFLAGS += -DUSE_FB
+LDFLAGS = -L${SYSROOT}/usr/lib -lpthread -lutil -s
+else
+LDFLAGS = -L${SYSROOT}/usr/lib -lSDL2 -lSDL2_ttf -lpthread -lutil -s
+endif
+
 build:
 	@echo st build options:
 	@echo "PLATFORM       = ${PLATFORM}"

@@ -1,7 +1,11 @@
 #ifndef __KEYBOARD_H__
 #define __KEYBOARD_H__
 
+#ifdef USE_FB
+#include "fbdev.h"
+#else
 #include <SDL2/SDL.h>
+#endif
 
 #define KMOD_SYNTHETIC (1 << 14)
 

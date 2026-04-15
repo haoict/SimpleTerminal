@@ -1,7 +1,11 @@
 #include "font.h"
 
+#ifdef USE_FB
+#include "fbdev.h"
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#endif
 
 // clang-format off
 // font from https://github.com/nesbox/TIC-80
@@ -676,12 +680,35 @@ static const unsigned char embedded_font5[] = {
 // clang-format on
 
 /* TTF Font globals */
+#ifdef USE_FB
+static int ttf_char_width = 6;   // fallback to bitmap size
+static int ttf_char_height = 8;  // fallback to bitmap size
+static int ttf_font_shade = 0;
+#else
 static TTF_Font *ttf_font = NULL;
 static int ttf_char_width = 6;   // fallback to bitmap size
 static int ttf_char_height = 8;  // fallback to bitmap size
 static int ttf_font_shade = 0;
+#endif
 
 /* TTF font */
+#ifdef USE_FB
+int init_ttf_font(const char *font_path, int font_size, int shade) {
+    (void)font_path;
+    (void)font_size;
+    ttf_font_shade = shade;
+    return 0;
+}
+
+void cleanup_ttf_font(void) {
+}
+
+int is_ttf_loaded(void) { return 0; }
+
+int get_ttf_char_width(void) { return ttf_char_width; }
+
+int get_ttf_char_height(void) { return ttf_char_height; }
+#else
 int init_ttf_font(const char *font_path, int font_size, int shade) {
     if (TTF_Init() == -1) {
         fprintf(stderr, "TTF_Init failed: %s\n", TTF_GetError());
@@ -717,7 +744,27 @@ int is_ttf_loaded(void) { return ttf_font != NULL; }
 int get_ttf_char_width(void) { return ttf_char_width; }
 
 int get_ttf_char_height(void) { return ttf_char_height; }
+#endif
 
+#ifdef USE_FB
+void draw_string_ttf(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg) {
+    (void)surface;
+    (void)text;
+    (void)x;
+    (void)y;
+    (void)fg;
+    (void)bg;
+}
+
+void draw_string_ttf_with_linebreak(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg) {
+    (void)surface;
+    (void)text;
+    (void)x;
+    (void)y;
+    (void)fg;
+    (void)bg;
+}
+#else
 void draw_string_ttf(SDL_Surface *surface, const char *text, int x, int y, SDL_Color fg, SDL_Color bg) {
     if (!ttf_font || !surface || !text) {
         fprintf(stderr, "Invalid parameters for draw_string_ttf\n");
@@ -776,6 +823,7 @@ void draw_string_ttf_with_linebreak(SDL_Surface *surface, const char *text, int 
         }
     }
 }
+#endif
 
 /* Embedded Bitmap font */
 void draw_char(SDL_Surface *surface, unsigned char symbol, int x, int y, unsigned short color, int embedded_font_name) {

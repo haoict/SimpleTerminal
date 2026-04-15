@@ -1,6 +1,10 @@
 #include "keyboard.h"
 
+#ifdef USE_FB
+#include "fbdev.h"
+#else
 #include <SDL2/SDL.h>
+#endif
 #include <time.h>
 
 #include "font.h"

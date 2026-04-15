@@ -1,6 +1,10 @@
+#ifdef USE_FB
+#include "fbdev.h"
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_ttf.h>
+#endif
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -281,6 +285,26 @@ void scale_to_size(int width, int height) {
 void sdl_init(void) {
     fprintf(stderr, "SDL init\n");
 
+#ifdef USE_FB
+    if (fbdev_init() != 0) {
+        fprintf(stderr, "Unable to initialize framebuffer backend\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* font */
+    sdl_load_fonts();
+
+    /* colors */
+    init_color_map();
+
+    main_window.width = initial_width;
+    main_window.height = initial_height;
+#ifndef BR2
+    main_window.width = initial_width * 2;
+    main_window.height = initial_height * 2;
+#endif
+    printf("Framebuffer mode: using resolution %dx%d\n", main_window.width, main_window.height);
+#else
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         fprintf(stderr, "Unable to initialize SDL: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
@@ -334,6 +358,7 @@ void sdl_init(void) {
         fprintf(stderr, "Unable to create texture: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
     }
+#endif
     int compose_w = (opt_rotate == 90 || opt_rotate == 270) ? main_window.height : main_window.width;
     int compose_h = (opt_rotate == 90 || opt_rotate == 270) ? main_window.width : main_window.height;
     main_window.surface = SDL_CreateRGBSurface(0, compose_w, compose_h, 16, 0xF800, 0x7E0, 0x1F, 0);  // console screen
@@ -368,16 +393,53 @@ void update_render(void) {
         draw_string(osk_screen, popup_message, rect.x + 2, rect.y + 4, SDL_MapRGB(osk_screen->format, popup_box_str.r, popup_box_str.g, popup_box_str.b), embedded_font_name);
     }
     draw_keyboard(osk_screen);  // osk_screen(SW) = console + keyboard
-    // Update texture with screen pixels and render
-    SDL_RenderClear(main_window.renderer);
+
+#ifdef USE_FB
     if (opt_rotate == 90 || opt_rotate == 270) {
-        // Ensure rotated_screen matches window size
         if (!rotated_screen || rotated_screen->w != main_window.width || rotated_screen->h != main_window.height) {
             if (rotated_screen) SDL_FreeSurface(rotated_screen);
             rotated_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);
         }
 
-        // Rotate osk_screen into rotated_screen
+        SDL_LockSurface(osk_screen);
+        SDL_LockSurface(rotated_screen);
+        int sw = osk_screen->w, sh = osk_screen->h;
+        int dpw = rotated_screen->w, dph = rotated_screen->h;
+        Uint16 *sdata = (Uint16 *)osk_screen->pixels;
+        Uint16 *ddata = (Uint16 *)rotated_screen->pixels;
+        int spitch = osk_screen->pitch / 2;
+        int dpitch = rotated_screen->pitch / 2;
+        if (opt_rotate == 90) {
+            for (int y = 0; y < sh; y++) {
+                for (int x = 0; x < sw; x++) {
+                    int dx = dpw - 1 - y;
+                    int dy = x;
+                    ddata[dy * dpitch + dx] = sdata[y * spitch + x];
+                }
+            }
+        } else {
+            for (int y = 0; y < sh; y++) {
+                for (int x = 0; x < sw; x++) {
+                    int dx = y;
+                    int dy = dph - 1 - x;
+                    ddata[dy * dpitch + dx] = sdata[y * spitch + x];
+                }
+            }
+        }
+        SDL_UnlockSurface(rotated_screen);
+        SDL_UnlockSurface(osk_screen);
+        fbdev_present(rotated_screen);
+    } else {
+        fbdev_present(osk_screen);
+    }
+#else
+    SDL_RenderClear(main_window.renderer);
+    if (opt_rotate == 90 || opt_rotate == 270) {
+        if (!rotated_screen || rotated_screen->w != main_window.width || rotated_screen->h != main_window.height) {
+            if (rotated_screen) SDL_FreeSurface(rotated_screen);
+            rotated_screen = SDL_CreateRGBSurface(0, main_window.width, main_window.height, 16, 0xF800, 0x7E0, 0x1F, 0);
+        }
+
         SDL_LockSurface(osk_screen);
         SDL_LockSurface(rotated_screen);
         int sw = osk_screen->w, sh = osk_screen->h;
@@ -409,7 +471,6 @@ void update_render(void) {
         SDL_UpdateTexture(main_window.texture, NULL, rotated_screen->pixels, rotated_screen->pitch);
         SDL_RenderCopy(main_window.renderer, main_window.texture, NULL, NULL);
     } else {
-        // 0 or 180 degrees: upload and render; 180 uses renderer rotation for speed
         SDL_UpdateTexture(main_window.texture, NULL, osk_screen->pixels, osk_screen->pitch);
         if (opt_rotate == 0) {
             SDL_RenderCopy(main_window.renderer, main_window.texture, NULL, NULL);
@@ -418,6 +479,7 @@ void update_render(void) {
         }
     }
     SDL_RenderPresent(main_window.renderer);
+#endif
 }
 
 void die(const char *errstr, ...) {
@@ -1184,7 +1246,7 @@ int main(int argc, char *argv[]) {
     }
     tty_new();
     create_tty_thread();
-    scale_to_size((int)(main_window.width / opt_scale), (int)(main_window.height / opt_scale));
+    // scale_to_size((int)(main_window.width / opt_scale), (int)(main_window.height / opt_scale));
     init_keyboard(embedded_font_name, opt_use_embedded_font_for_keyboard);
     main_loop();
     return 0;

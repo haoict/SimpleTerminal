@@ -1,8 +1,12 @@
 #ifndef __FONT_H__
 #define __FONT_H__
 
+#ifdef USE_FB
+#include "fbdev.h"
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#endif
 
 /* Bitmap font functions */
 void draw_char(SDL_Surface *surface, unsigned char symbol, int x, int y, unsigned short color, int embedded_font_name);
