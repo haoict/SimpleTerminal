@@ -286,7 +286,9 @@ void sdl_init(void) {
         exit(EXIT_FAILURE);
     }
 
+#ifdef BR2
     SDL_ShowCursor(0);
+#endif
     SDL_StartTextInput();
 
     /* font */
@@ -358,6 +360,7 @@ void create_tty_thread() {
 
 void update_render(void) {
     if (main_window.surface == NULL) return;
+    // printf("Updating render\n");
 
     memcpy(osk_screen->pixels, main_window.surface->pixels, main_window.surface->w * main_window.surface->h * 2);
     if (popup_message[0] != '\0') {
@@ -973,6 +976,7 @@ void take_screenshot() {
 void main_loop(void) {
     SDL_Event ev;
     int running = 1;
+    int should_rerender = 0;
     int button_up_held = 0, button_down_held = 0, button_left_held = 0, button_right_held = 0;
     Uint32 last_button_held_time = 0;
 #if defined(RG35XXSP)
@@ -985,6 +989,19 @@ void main_loop(void) {
             if (ev.type == SDL_QUIT) {
                 running = 0;
                 break;
+            }
+            if (ev.type == SDL_MOUSEMOTION || ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP) {
+                continue;  // skip mouse events
+            }
+            if (ev.type == SDL_WINDOWEVENT) {
+                // if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+                //     main_window.state |= WIN_FOCUSED;
+                //     draw();  // redraw to update cursor color
+                // } else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                //     main_window.state &= ~WIN_FOCUSED;
+                //     draw();  // redraw to update cursor color
+                // }
+                continue;  // skip other window events for now
             }
 
             if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
@@ -1073,6 +1090,7 @@ void main_loop(void) {
                         take_screenshot();
                     }
             }
+            should_rerender = 1;
         }
 
         Uint32 now = SDL_GetTicks();
@@ -1089,9 +1107,13 @@ void main_loop(void) {
         if (key && now - last_button_held_time > BUTTON_HELD_DELAY) {
             handle_narrow_keys_held(key);
             last_button_held_time = now;
+            should_rerender = 1;
         }
 
-        update_render();  // redraw the screen
+        if (should_rerender) {
+            update_render();  // redraw the screen
+            should_rerender = 0;
+        }
         SDL_Delay(33);    // ~30 FPS
     }
 
