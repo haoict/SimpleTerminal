@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/embedded-font-editor/$1"
+      "destination": "/landing-page/$1"
     }
   ]
 }

@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple Terminal — Terminal for Embedded Linux</title>
+  <style>
+    /* ─── Reset & base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0a0c10;
+      --bg2:       #0f1218;
+      --bg3:       #141820;
+      --surface:   #1a1f2e;
+      --border:    rgba(255,255,255,.07);
+      --green:     #00ffa3;
+      --cyan:      #00d4ff;
+      --purple:    #a855f7;
+      --red:       #ff4d6d;
+      --yellow:    #fbbf24;
+      --text:      #e2e8f0;
+      --text-muted:#64748b;
+      --glow-g:    rgba(0,255,163,.18);
+      --glow-c:    rgba(0,212,255,.18);
+      --font-mono: "JetBrains Mono","Fira Code","Cascadia Code",monospace;
+      --font-sans: "Inter","Segoe UI",system-ui,sans-serif;
+      --r:         12px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ─── Noise overlay ──────────────────────────────────────────────── */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ─── Scrollbar ──────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 3px; }
+
+    /* ─── Nav ────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      height: 64px;
+      background: rgba(10,12,16,.72);
+      backdrop-filter: blur(20px) saturate(1.4);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: .6rem;
+      font-family: var(--font-mono); font-size: .9rem; font-weight: 700;
+      color: var(--green); text-decoration: none; letter-spacing: .04em;
+    }
+    .nav-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .nav-links {
+      display: flex; gap: 2rem; list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: .875rem; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--green); color: #000;
+      padding: .45rem 1.1rem; border-radius: 6px;
+      font-size: .85rem; font-weight: 700;
+      text-decoration: none; letter-spacing: .02em;
+      transition: opacity .2s, transform .15s;
+    }
+    .nav-cta:hover { opacity: .88; transform: translateY(-1px); }
+    @media (max-width: 680px) {
+      .nav-links { display: none; }
+    }
+
+    /* ─── Gradient meshes ────────────────────────────────────────────── */
+    .mesh {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; z-index: 0;
+    }
+    .mesh-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,255,163,.12) 0%, transparent 70%);
+      top: -200px; left: -100px;
+    }
+    .mesh-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,212,255,.1) 0%, transparent 70%);
+      top: 100px; right: -150px;
+    }
+    .mesh-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(168,85,247,.09) 0%, transparent 70%);
+      top: 400px; left: 30%;
+    }
+
+    /* ─── Hero ───────────────────────────────────────────────────────── */
+    #hero {
+      position: relative; overflow: hidden;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 100px clamp(1.5rem, 5vw, 4rem) 80px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(0,255,163,.08);
+      border: 1px solid rgba(0,255,163,.25);
+      color: var(--green); font-size: .8rem; font-weight: 600;
+      padding: .3rem .85rem; border-radius: 999px; letter-spacing: .06em;
+      margin-bottom: 1.8rem;
+      animation: fadeInDown .6s ease both;
+    }
+    .hero-badge span { display: block; width: 7px; height: 7px;
+      background: var(--green); border-radius: 50%;
+      animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .4; transform: scale(.75); }
+    }
+
+    h1 {
+      font-size: clamp(2.6rem, 7vw, 5.5rem);
+      font-weight: 800; line-height: 1.08;
+      letter-spacing: -.03em;
+      animation: fadeInDown .7s .1s ease both;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--green) 0%, var(--cyan) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      max-width: 620px; margin: 1.6rem auto 2.8rem;
+      color: var(--text-muted); font-size: clamp(1rem, 2.2vw, 1.2rem); line-height: 1.7;
+      animation: fadeInDown .7s .2s ease both;
+    }
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+      animation: fadeInDown .7s .3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      color: #000; font-weight: 700; font-size: 1rem;
+      padding: .8rem 2rem; border-radius: 8px; text-decoration: none;
+      transition: opacity .2s, transform .15s, box-shadow .2s;
+      box-shadow: 0 0 30px rgba(0,255,163,.25);
+    }
+    .btn-primary:hover {
+      opacity: .9; transform: translateY(-2px);
+      box-shadow: 0 0 50px rgba(0,255,163,.4);
+    }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border); font-weight: 600; font-size: 1rem;
+      padding: .8rem 2rem; border-radius: 8px; text-decoration: none;
+      transition: border-color .2s, background .2s, transform .15s;
+    }
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,.2);
+      background: rgba(255,255,255,.04);
+      transform: translateY(-2px);
+    }
+
+    /* ─── Handheld device mockup ────────────────────────────────────── */
+    .device-wrapper {
+      margin: 4rem auto 0; max-width: 700px; width: 100%;
+      animation: fadeInUp .8s .4s ease both;
+      position: relative; z-index: 1;
+    }
+    .device-glow {
+      position: absolute; inset: -50px;
+      background: radial-gradient(ellipse at 50% 60%, rgba(0,255,163,.11), transparent 65%);
+      pointer-events: none;
+    }
+
+    /* Body */
+    .handheld {
+      position: relative;
+      background: linear-gradient(168deg, #23262f 0%, #191c24 45%, #111318 100%);
+      border-radius: 26px 26px 42px 42px;
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow:
+        0 50px 120px rgba(0,0,0,.85),
+        0 0 0 1px rgba(255,255,255,.04) inset,
+        0 2px 0 rgba(255,255,255,.07) inset,
+        inset 0 -8px 24px rgba(0,0,0,.35);
+      padding: 0 20px 18px;
+    }
+
+    /* Shoulder buttons */
+    .shoulders {
+      display: flex;
+      justify-content: space-between;
+    }
+    .shoulder-grp { display: flex; gap: 3px; }
+    .sh-btn {
+      background: linear-gradient(170deg, #2c2f3d, #1c1e28);
+      border: 1px solid rgba(255,255,255,.06);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 7px 18px 5px;
+      font-size: .57rem; font-weight: 700;
+      font-family: var(--font-mono);
+      color: #3e4560;
+      letter-spacing: .09em;
+      box-shadow: 0 5px 14px rgba(0,0,0,.45), inset 0 -2px 0 rgba(0,0,0,.3);
+    }
+
+    /* Main face */
+    .handheld-face {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 12px;
+    }
+
+    /* Left / right control panels */
+    .ctrl {
+      width: 108px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    /* Analog sticks */
+    .stick {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #30354a, #0c0e16);
+      border: 1.5px solid rgba(255,255,255,.09);
+      box-shadow: 0 5px 12px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+      position: relative;
+    }
+    .stick::after {
+      content: '';
+      position: absolute;
+      width: 17px; height: 17px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #3c4058, #1c1e2e);
+      border: 1px solid rgba(255,255,255,.06);
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+    }
+
+    /* D-pad */
+    .dpad {
+      width: 62px; height: 62px;
+      position: relative;
+    }
+    .dp-h, .dp-v {
+      position: absolute;
+      background: linear-gradient(160deg, #2c2f3e, #1c1e28);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .dp-h { width: 100%; height: 34%; top: 33%; left: 0; }
+    .dp-v { width: 34%; height: 100%; top: 0; left: 33%; }
+    .dpad::after {
+      content: '';
+      position: absolute;
+      width: 34%; height: 34%;
+      top: 33%; left: 33%;
+      background: #191c24;
+      border-radius: 50%;
+      z-index: 2;
+    }
+
+    /* ABXY face buttons */
+    .face-btns {
+      width: 72px; height: 72px;
+      position: relative;
+    }
+    .fbtn {
+      position: absolute;
+      width: 23px; height: 23px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .5rem; font-weight: 800;
+      font-family: var(--font-mono);
+      box-shadow: 0 3px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .fbtn-x { top:0;    left:50%; transform:translateX(-50%); background:#1b3f8e; color:#7ec9f6; }
+    .fbtn-b { top:50%;  left:0;   transform:translateY(-50%); background:#1a6628; color:#6ddc88; }
+    .fbtn-a { top:50%;  right:0;  transform:translateY(-50%); background:#8a1818; color:#ff8080; }
+    .fbtn-y { bottom:0; left:50%; transform:translateX(-50%); background:#7a5e00; color:#ffd060; }
+
+    /* Screen area */
+    .screen-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .screen-bezel {
+      width: 100%;
+      background: #040508;
+      border-radius: 6px;
+      padding: 5px;
+      border: 1px solid rgba(255,255,255,.05);
+      box-shadow:
+        inset 0 0 40px rgba(0,0,0,.9),
+        0 6px 24px rgba(0,0,0,.6),
+        0 0 0 1px rgba(0,0,0,.8);
+    }
+    .screen-bezel canvas {
+      display: block;
+      width: 100%;
+      border-radius: 2px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Center system buttons */
+    .center-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sys-btn {
+      background: #181b24;
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-size: .52rem; font-weight: 600;
+      font-family: var(--font-mono);
+      color: #343960;
+      letter-spacing: .07em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .sys-home {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #282b3e, #0e1018);
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow: 0 2px 6px rgba(0,0,0,.5);
+    }
+
+    /* Power LED */
+    .power-led {
+      position: absolute;
+      top: 14px; right: 26px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    /* ─── Section shared ─────────────────────────────────────────────── */
+    section { position: relative; z-index: 1; }
+    .section-label {
+      font-family: var(--font-mono); font-size: .75rem; font-weight: 600;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--green); margin-bottom: .8rem;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; letter-spacing: -.025em; line-height: 1.15;
+    }
+    .section-sub {
+      color: var(--text-muted); margin-top: .9rem;
+      font-size: clamp(.95rem, 2vw, 1.1rem); max-width: 560px; line-height: 1.7;
+    }
+
+    /* ─── Features ───────────────────────────────────────────────────── */
+    #features {
+      padding: 120px clamp(1.5rem, 5vw, 4rem);
+    }
+    .features-header { text-align: center; margin-bottom: 4rem; }
+    .features-header .section-sub { margin: .9rem auto 0; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .feat-card {
+      background: var(--bg2);
+      padding: 2.2rem 2rem;
+      transition: background .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feat-card::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .35s ease;
+    }
+    .feat-card:hover { background: var(--bg3); }
+    .feat-card:hover::before { transform: scaleX(1); }
+    .feat-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.3rem; font-size: 1.4rem;
+    }
+    .feat-title { font-weight: 700; font-size: 1.05rem; margin-bottom: .5rem; }
+    .feat-desc { color: var(--text-muted); font-size: .9rem; line-height: 1.65; }
+
+    /* ─── No-X11 highlight bar ────────────────────────────────────────── */
+    #no-display {
+      padding: 80px clamp(1.5rem, 5vw, 4rem);
+      background: linear-gradient(135deg, rgba(0,255,163,.04), rgba(0,212,255,.04));
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .nd-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .nd-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    }
+    .nd-stack { display: flex; flex-direction: column; gap: 1rem; }
+    .nd-item {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.1rem 1.3rem;
+      font-family: var(--font-mono); font-size: .875rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .nd-item:hover { border-color: rgba(0,255,163,.3); transform: translateX(4px); }
+    .nd-item .nd-badge {
+      font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+      padding: .2rem .55rem; border-radius: 4px; flex-shrink: 0;
+    }
+    .nd-item.cross .nd-badge { background: rgba(255,77,109,.15); color: var(--red); }
+    .nd-item.check .nd-badge { background: rgba(0,255,163,.12); color: var(--green); }
+    .nd-item .nd-name { flex: 1; color: var(--text); }
+    .nd-item .nd-note { color: var(--text-muted); font-size: .78rem; }
+
+    /* ─── Architecture diagram ───────────────────────────────────────── */
+    #architecture {
+      padding: 120px clamp(1.5rem, 5vw, 4rem);
+    }
+    .arch-inner {
+      max-width: 1100px; margin: 0 auto;
+    }
+    .arch-header { margin-bottom: 3.5rem; }
+    .arch-diagram {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem; align-items: center;
+    }
+    @media (max-width: 700px) {
+      .arch-diagram { grid-template-columns: 1fr; }
+      .arch-arrow { transform: rotate(90deg); }
+    }
+    .arch-col {
+      display: flex; flex-direction: column; gap: .8rem;
+    }
+    .arch-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.1rem 1.4rem;
+      font-family: var(--font-mono); font-size: .85rem;
+    }
+    .arch-box .ab-label {
+      font-size: .7rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-muted); margin-bottom: .25rem;
+    }
+    .arch-box .ab-name { font-weight: 700; color: var(--text); }
+    .arch-box.highlight {
+      border-color: rgba(0,255,163,.4);
+      background: rgba(0,255,163,.05);
+    }
+    .arch-box.highlight .ab-name { color: var(--green); }
+    .arch-center {
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+    }
+    .arch-arrow { color: var(--cyan); font-size: 1.5rem; }
+    .arch-center-box {
+      background: linear-gradient(135deg, rgba(0,255,163,.1), rgba(0,212,255,.1));
+      border: 1px solid rgba(0,212,255,.3);
+      border-radius: 14px; padding: 1.8rem 2rem; text-align: center;
+      font-family: var(--font-mono);
+    }
+    .arch-center-box .ac-title {
+      font-size: 1rem; font-weight: 800; color: var(--cyan); margin-bottom: .3rem;
+    }
+    .arch-center-box .ac-sub {
+      font-size: .75rem; color: var(--text-muted);
+    }
+
+    /* ─── Use cases ───────────────────────────────────────────────────── */
+    #usecases {
+      padding: 120px clamp(1.5rem, 5vw, 4rem);
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+    }
+    .uc-inner { max-width: 1100px; margin: 0 auto; }
+    .uc-header { text-align: center; margin-bottom: 3.5rem; }
+    .uc-header .section-sub { margin: .9rem auto 0; }
+    .uc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.2rem;
+    }
+    .uc-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem;
+      transition: border-color .25s, transform .2s;
+      position: relative; overflow: hidden;
+    }
+    .uc-card:hover {
+      border-color: rgba(0,212,255,.3);
+      transform: translateY(-3px);
+    }
+    .uc-card::after {
+      content: attr(data-num);
+      position: absolute; right: 1.4rem; bottom: 1rem;
+      font-family: var(--font-mono); font-size: 3.5rem; font-weight: 900;
+      color: rgba(255,255,255,.03); line-height: 1;
+    }
+    .uc-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .uc-title { font-weight: 700; font-size: 1rem; margin-bottom: .5rem; }
+    .uc-desc { color: var(--text-muted); font-size: .875rem; line-height: 1.65; }
+
+    /* ─── Stats bar ───────────────────────────────────────────────────── */
+    #stats {
+      padding: 70px clamp(1.5rem, 5vw, 4rem);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .stats-inner {
+      max-width: 900px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 2rem; text-align: center;
+    }
+    .stat-num {
+      font-size: clamp(2rem, 5vw, 3rem); font-weight: 900;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1;
+    }
+    .stat-label { color: var(--text-muted); font-size: .875rem; margin-top: .4rem; }
+
+    /* ─── CTA ─────────────────────────────────────────────────────────── */
+    #cta {
+      padding: 140px clamp(1.5rem, 5vw, 4rem);
+      text-align: center; position: relative; overflow: hidden;
+    }
+    #cta .mesh-4 {
+      position: absolute; width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(0,255,163,.08) 0%, transparent 65%);
+      left: 50%; top: 50%; transform: translate(-50%, -50%);
+      border-radius: 50%; pointer-events: none;
+    }
+    #cta h2 {
+      font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 800;
+      letter-spacing: -.03em; line-height: 1.12; position: relative; z-index: 1;
+    }
+    #cta p {
+      color: var(--text-muted); margin: 1.2rem auto 2.5rem;
+      max-width: 500px; font-size: 1.05rem; position: relative; z-index: 1;
+    }
+    .cta-actions { position: relative; z-index: 1; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .cta-cmd {
+      display: inline-flex; align-items: center; gap: .6rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: .75rem 1.4rem;
+      font-family: var(--font-mono); font-size: .9rem; color: var(--green);
+    }
+    .cta-cmd .dollar { color: var(--text-muted); }
+
+    /* ─── Footer ──────────────────────────────────────────────────────── */
+    footer {
+      padding: 2.5rem clamp(1.5rem, 5vw, 4rem);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-logo {
+      font-family: var(--font-mono); font-size: .85rem;
+      color: var(--text-muted); display: flex; align-items: center; gap: .5rem;
+    }
+    .footer-copy { color: var(--text-muted); font-size: .8rem; }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a {
+      color: var(--text-muted); text-decoration: none; font-size: .83rem;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ─── Animations ──────────────────────────────────────────────────── */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* intersection-observer reveal */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .reveal.visible {
+      opacity: 1; transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .3s; }
+    .reveal-delay-4 { transition-delay: .4s; }
+
+    /* ─── Background canvas ─────────────────────────────────────────── */
+    #bgCanvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* Dot grid */
+    body::after {
+      content: "";
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,.032) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* scanlines easter egg */
+    .scanlines::after {
+      content: "";
+      position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px
+      );
+      border-radius: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<!-- ─── NAV ──────────────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#00ffa3" fill-opacity=".12"/>
+      <path d="M6 9l5 5-5 5" stroke="#00ffa3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 19h8" stroke="#00ffa3" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    Simple Terminal
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#no-display">Design</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#usecases">Use Cases</a></li>
+  </ul>
+  <a class="nav-cta" href="#cta">Download</a>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────────────────────────── -->
+<section id="hero">
+  <div class="mesh mesh-1"></div>
+  <div class="mesh mesh-2"></div>
+  <div class="mesh mesh-3"></div>
+
+  <div class="hero-badge">
+    <span></span>
+    NOW AVAILABLE FOR EMBEDDED LINUX
+  </div>
+
+  <h1>Terminal Emulator<br><em>For Embedded Devices</em></h1>
+
+  <p class="hero-sub">
+    Simple Terminal delivers a full-featured terminal experience
+    directly on embedded Linux hardware — no X11, no Wayland, no desktop
+    environment required.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#cta" class="btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg>
+      Download
+    </a>
+    <a href="#features" class="btn-secondary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Explore Features
+    </a>
+  </div>
+
+  <!-- handheld device mockup -->
+  <div class="device-wrapper">
+    <div class="device-glow"></div>
+    <div class="handheld">
+
+      <!-- Power LED -->
+      <div class="power-led"></div>
+
+      <!-- Shoulder buttons -->
+      <div class="shoulders">
+        <div class="shoulder-grp">
+          <div class="sh-btn">L2</div>
+          <div class="sh-btn">L1</div>
+        </div>
+        <div class="shoulder-grp">
+          <div class="sh-btn">R1</div>
+          <div class="sh-btn">R2</div>
+        </div>
+      </div>
+
+      <!-- Main face -->
+      <div class="handheld-face">
+
+        <!-- Left controls: stick + d-pad -->
+        <div class="ctrl">
+          <div class="stick"></div>
+          <div class="dpad">
+            <div class="dp-h"></div>
+            <div class="dp-v"></div>
+          </div>
+        </div>
+
+        <!-- Screen -->
+        <div class="screen-area">
+          <div class="screen-bezel">
+            <canvas id="termCanvas"></canvas>
+          </div>
+          <!-- Select / Home / Start -->
+          <div class="center-row">
+            <div class="sys-btn">SELECT</div>
+            <div class="sys-home"></div>
+            <div class="sys-btn">START</div>
+          </div>
+        </div>
+
+        <!-- Right controls: face buttons + stick -->
+        <div class="ctrl">
+          <div class="face-btns">
+            <div class="fbtn fbtn-x">X</div>
+            <div class="fbtn fbtn-b">B</div>
+            <div class="fbtn fbtn-a">A</div>
+            <div class="fbtn fbtn-y">Y</div>
+          </div>
+          <div class="stick"></div>
+        </div>
+
+      </div><!-- /handheld-face -->
+    </div><!-- /handheld -->
+  </div><!-- /device-wrapper -->
+</section>
+
+<!-- ─── FEATURES ─────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="features-header reveal">
+    <div class="section-label">Core Features</div>
+    <h2 class="section-title">Everything a terminal needs.<br>Nothing it doesn't.</h2>
+    <p class="section-sub">
+      Built from the ground up for resource-constrained environments without
+      sacrificing developer experience.
+    </p>
+  </div>
+  <div class="features-grid reveal reveal-delay-1">
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(0,255,163,.1);">⚡</div>
+      <div class="feat-title">SDL2 Rendering</div>
+      <div class="feat-desc">Renders directly to <code>/dev/fb0</code> using the SDL2 library. No GPU drivers, no compositor, no overhead.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(0,212,255,.1);">🖥</div>
+      <div class="feat-title">VT/ANSI Compatible</div>
+      <div class="feat-desc">Full VT100/VT220/xterm-256color support. Works seamlessly with bash, zsh, vim, tmux, htop, and any ANSI-aware app.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(168,85,247,.1);">🔤</div>
+      <div class="feat-title">Built-in Font Rendering</div>
+      <div class="feat-desc">Ships with embedded bitmap and vector fonts. No fontconfig, no FreeType dependency headaches on minimal root filesystems.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(251,191,36,.1);">⌨️</div>
+      <div class="feat-title">Direct Input Handling</div>
+      <div class="feat-desc">Reads directly from <code>/dev/input/event*</code> and <code>/dev/tty</code>. Works with USB HID keyboards out of the box.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(255,77,109,.1);">📦</div>
+      <div class="feat-title">Tiny Footprint</div>
+      <div class="feat-desc">Single statically-linked binary under 2 MB. Runs on devices with 32 MB RAM. Ships with zero runtime dependencies.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(0,255,163,.1);">🔒</div>
+      <div class="feat-title">Multi-Session Support</div>
+      <div class="feat-desc">Switch between multiple virtual terminals with keyboard shortcuts. Each session is isolated with its own PTY and history.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(0,212,255,.1);">🎨</div>
+      <div class="feat-title">True Color & Themes</div>
+      <div class="feat-desc">24-bit colour support on capable framebuffers. Ships with built-in dark/light themes and a JSON theme loader.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(168,85,247,.1);">🔗</div>
+      <div class="feat-title">Serial Console Bridge</div>
+      <div class="feat-desc">Bridge between serial ports and the terminal UI. Ideal for debugging other devices or acting as a serial terminal gateway.</div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(251,191,36,.1);">🛡</div>
+      <div class="feat-title">Secure by Design</div>
+      <div class="feat-desc">Drop privileges after init, seccomp sandbox support, no network stack. Minimal attack surface for secure kiosk deployments.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── NO-DISPLAY SECTION ────────────────────────────────────────────── -->
+<section id="no-display">
+  <div class="nd-inner">
+    <div class="reveal">
+      <div class="section-label">Display-Server Free</div>
+      <h2 class="section-title">Skip the stack.<br>Keep the power.</h2>
+      <p class="section-sub">
+        Traditional terminal emulators drag in an entire display-server
+        dependency chain. Simple Terminal eliminates all of it — using SDL2 and run on anything with a Linux kernel.
+      </p>
+    </div>
+    <div class="nd-stack reveal reveal-delay-2">
+      <div class="nd-item cross">
+        <span class="nd-badge">SKIP</span>
+        <span class="nd-name">X11 / Xorg</span>
+        <span class="nd-note">not required</span>
+      </div>
+      <div class="nd-item cross">
+        <span class="nd-badge">SKIP</span>
+        <span class="nd-name">Wayland + libwayland</span>
+        <span class="nd-note">not required</span>
+      </div>
+      <div class="nd-item cross">
+        <span class="nd-badge">SKIP</span>
+        <span class="nd-name">D-Bus / systemd-logind</span>
+        <span class="nd-note">not required</span>
+      </div>
+      <div class="nd-item cross">
+        <span class="nd-badge">SKIP</span>
+        <span class="nd-name">Mesa / GPU drivers</span>
+        <span class="nd-note">not required</span>
+      </div>
+      <div class="nd-item check">
+        <span class="nd-badge">USE</span>
+        <span class="nd-name">SDL2 — Simple DirectMedia Layer 2</span>
+        <span class="nd-note">direct access</span>
+      </div>
+      <div class="nd-item check">
+        <span class="nd-badge">USE</span>
+        <span class="nd-name">/dev/input — evdev input</span>
+        <span class="nd-note">direct access</span>
+      </div>
+      <div class="nd-item check">
+        <span class="nd-badge">USE</span>
+        <span class="nd-name">PTY — pseudo-terminal</span>
+        <span class="nd-note">kernel native</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── ARCHITECTURE ──────────────────────────────────────────────────── -->
+<section id="architecture">
+  <div class="arch-inner">
+    <div class="arch-header reveal">
+      <div class="section-label">Architecture</div>
+      <h2 class="section-title">Lean by design.</h2>
+      <p class="section-sub">
+        Simple Terminal sits directly between the Linux kernel interfaces and your shell —
+        a thin, performant layer with no unnecessary abstractions.
+      </p>
+    </div>
+    <div class="arch-diagram reveal reveal-delay-1">
+      <!-- left col -->
+      <div class="arch-col">
+        <div class="arch-box">
+          <div class="ab-label">Hardware</div>
+          <div class="ab-name">Display Panel</div>
+        </div>
+        <div class="arch-box">
+          <div class="ab-label">Hardware</div>
+          <div class="ab-name">USB Keyboard / GPIO</div>
+        </div>
+        <div class="arch-box">
+          <div class="ab-label">Kernel driver</div>
+          <div class="ab-name">/dev/fb0 &nbsp;· fbdev</div>
+        </div>
+        <div class="arch-box">
+          <div class="ab-label">Kernel driver</div>
+          <div class="ab-name">/dev/input/event*</div>
+        </div>
+      </div>
+
+      <!-- center -->
+      <div class="arch-center">
+        <span class="arch-arrow">↔</span>
+        <div class="arch-center-box">
+          <div class="ac-title">Simple Terminal</div>
+          <div class="ac-sub">Simple Terminal<br>single binary · &lt;2 MB</div>
+        </div>
+        <span class="arch-arrow">↔</span>
+      </div>
+
+      <!-- right col -->
+      <div class="arch-col">
+        <div class="arch-box">
+          <div class="ab-label">Kernel</div>
+          <div class="ab-name">PTY Master/Slave</div>
+        </div>
+        <div class="arch-box highlight">
+          <div class="ab-label">Shell / Process</div>
+          <div class="ab-name">bash · zsh · sh</div>
+        </div>
+        <div class="arch-box highlight">
+          <div class="ab-label">TUI Application</div>
+          <div class="ab-name">vim · htop · tmux · mc</div>
+        </div>
+        <div class="arch-box highlight">
+          <div class="ab-label">Custom App</div>
+          <div class="ab-name">Your embedded software</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── USE CASES ─────────────────────────────────────────────────────── -->
+<section id="usecases">
+  <div class="uc-inner">
+    <div class="uc-header reveal">
+      <div class="section-label">Use Cases</div>
+      <h2 class="section-title">Built for every edge.</h2>
+      <p class="section-sub">
+        From industrial controllers to IoT gateways, Simple Terminal runs wherever a
+        standard Linux terminal is needed without the bloat.
+      </p>
+    </div>
+    <div class="uc-grid">
+      <div class="uc-card reveal reveal-delay-1" data-num="01">
+        <div class="uc-icon">🏭</div>
+        <div class="uc-title">Industrial HMI</div>
+        <div class="uc-desc">Replace legacy panel computers running stripped-down Linux with a modern terminal UI. No DE needed on constrained SoCs.</div>
+      </div>
+      <div class="uc-card reveal reveal-delay-2" data-num="02">
+        <div class="uc-icon">🌐</div>
+        <div class="uc-title">IoT Gateways</div>
+        <div class="uc-desc">Provide an on-device console for diagnostics and configuration on ARM-based gateways with minimal flash storage.</div>
+      </div>
+      <div class="uc-card reveal reveal-delay-3" data-num="03">
+        <div class="uc-icon">🚗</div>
+        <div class="uc-title">Automotive / In-Vehicle</div>
+        <div class="uc-desc">Engineering debug terminal on automotive-grade SoCs. Boot directly to a terminal over a serialiser display link.</div>
+      </div>
+      <div class="uc-card reveal reveal-delay-4" data-num="04">
+        <div class="uc-icon">📡</div>
+        <div class="uc-title">Network Appliances</div>
+        <div class="uc-desc">Console access on headless routers and switches via a locally-attached display — without standing up a full graphical stack.</div>
+      </div>
+      <div class="uc-card reveal reveal-delay-1" data-num="05">
+        <div class="uc-icon">🏥</div>
+        <div class="uc-title">Medical Devices</div>
+        <div class="uc-desc">Minimal footprint reduces validation scope. Seccomp sandboxing and privilege separation support regulatory requirements.</div>
+      </div>
+      <div class="uc-card reveal reveal-delay-2" data-num="06">
+        <div class="uc-icon">🛰</div>
+        <div class="uc-title">Edge Compute</div>
+        <div class="uc-desc">Operator access at the compute node without shipping a full Linux desktop. Perfect for Raspberry Pi CM and NVIDIA Jetson.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS ──────────────────────────────────────────────────────────── -->
+<section id="stats">
+  <div class="stats-inner">
+    <div class="reveal">
+      <div class="stat-num">&lt;2 MB</div>
+      <div class="stat-label">Binary size (static)</div>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="stat-num">32 MB</div>
+      <div class="stat-label">Minimum RAM required</div>
+    </div>
+    <div class="reveal reveal-delay-2">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Runtime dependencies</div>
+    </div>
+    <div class="reveal reveal-delay-3">
+      <div class="stat-num">256</div>
+      <div class="stat-label">Colour support (+ 24-bit)</div>
+    </div>
+    <div class="reveal reveal-delay-4">
+      <div class="stat-num">ARMv7+</div>
+      <div class="stat-label">Target architectures</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ───────────────────────────────────────────────────────────── -->
+<section id="cta">
+  <div class="mesh-4"></div>
+  <h2 class="reveal">Download<br><em style="background:linear-gradient(135deg,#00ffa3,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">simple-terminal</em></h2>
+  <p class="reveal reveal-delay-1">
+    Drop Simple Terminal into your Buildroot or Yocto layer and have a terminal
+    running in minutes — on any SDL2-capable Linux target.
+  </p>
+  <div class="cta-actions reveal reveal-delay-2">
+    <!-- <div class="cta-cmd">
+      <span class="dollar">$</span>
+      make
+    </div> -->
+    <a href="https://github.com/haoict/SimpleTerminal/releases" target="_blank" class="btn-primary">
+      Visit GitHub
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-logo">
+    <svg width="20" height="20" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#00ffa3" fill-opacity=".12"/>
+      <path d="M6 9l5 5-5 5" stroke="#00ffa3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 19h8" stroke="#00ffa3" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    Simple Terminal
+  </div>
+  <div class="footer-links">
+    <a href="#">GitHub</a>
+    <a href="#">Docs</a>
+    <a href="#">Changelog</a>
+    <a href="#">License</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 @haoict. All rights reserved.</div>
+</footer>
+
+<!-- ─── SCRIPTS ───────────────────────────────────────────────────────── -->
+<script src="./embedded-font-editor/fonts.js"></script>
+<script>
+  /* ── Intersection Observer reveal ───────────────────────────────────── */
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  revealEls.forEach(el => io.observe(el));
+
+  /* ── Bitmap font terminal body (Embedded Font 1, 6×6) ──────────────── */
+  (function () {
+    const font    = FONTS[0];               // Embedded Font 1: 6×6
+    const SCALE   = 1;
+    const GLYPH_W = font.width;            // 6
+    const GLYPH_H = font.height;           // 6
+    const STEP_X  = (GLYPH_W + 1) * SCALE; // 7px per glyph
+    const LINE_H  = GLYPH_H * SCALE + 4;   // 10px line height
+    const PAD_X   = 10;
+    const PAD_Y   = 8;
+
+    const C = {
+      bg:     '#030406',
+      green:  '#00ffa3',
+      cyan:   '#00d4ff',
+      yellow: '#fbbf24',
+      purple: '#a855f7',
+      red:    '#ff4d6d',
+      text:   '#c9d1d9',
+      muted:  '#7c8fa6',
+    };
+
+    function clsColor(cls) {
+      return { g: C.green, c: C.cyan, y: C.yellow, p: C.purple, r: C.red }[cls] || C.muted;
+    }
+
+    const canvas = document.getElementById('termCanvas');
+    // Screen inner width = bezel clientWidth minus 2×5px padding
+    const screenW = (canvas.parentElement.clientWidth || 290) - 10;
+    canvas.width  = screenW;
+    canvas.height = Math.round(screenW * 3 / 4); // 4:3 aspect
+    const ctx = canvas.getContext('2d');
+
+    function drawGlyph(code, x, y, color) {
+      if (code < 0 || code > 127) code = 32;
+      const base = code * font.bytesPerChar;
+      ctx.fillStyle = color;
+      for (let r = 0; r < GLYPH_H; r++) {
+        const byte = font.data[base + r];
+        for (let c = 0; c < GLYPH_W; c++) {
+          if ((byte >> (7 - c)) & 1) {
+            ctx.fillRect(x + c * SCALE, y + r * SCALE, SCALE, SCALE);
+          }
+        }
+      }
+    }
+
+    function drawStr(str, x, y, color) {
+      for (let i = 0; i < str.length; i++) {
+        drawGlyph(str.charCodeAt(i), x, y, color);
+        x += STEP_X;
+      }
+      return x;
+    }
+
+    // Sanitise a string to printable ASCII (replace anything outside 32–126)
+    function toAscii(str) {
+      return str.replace(/[^\x20-\x7e]/g, function(ch) {
+        const map = { '\u2014': '-', '\u00d7': 'x', '\u2588': '#', '\u2591': '.' };
+        return map[ch] || '?';
+      });
+    }
+
+    const drawnLines = [];
+    let cursorOn = true;
+    setInterval(function () { cursorOn = !cursorOn; redraw(); }, 550);
+
+    function redraw() {
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let y = PAD_Y;
+      for (let i = 0; i < drawnLines.length; i++) {
+        const line = drawnLines[i];
+        if (line.type === 'blank') { y += LINE_H * 0.55; continue; }
+        let x = PAD_X;
+        if (line.type === 'cmd') {
+          x = drawStr(line.prompt, x, y, C.green);
+          x = drawStr(line.text,   x, y, C.text);
+          if (line.cursor && cursorOn) {
+            ctx.fillStyle = C.green;
+            ctx.fillRect(x, y, GLYPH_W * SCALE, GLYPH_H * SCALE);
+          }
+        } else {
+          drawStr(line.text, x, y, clsColor(line.cls));
+        }
+        y += LINE_H;
+      }
+    }
+
+    const lines = [
+      { type: 'cmd',  prompt: 'root@rk3568:/# ', text: 'Simple Terminal --version' },
+      { type: 'out',  cls: 'g', text: 'Simple Terminal v2.4.1 (arm-linux-gnueabihf)' },
+      { type: 'out',  cls: '',  text: 'Framebuffer: /dev/fb0  [640x480 32bpp]' },
+      { type: 'out',  cls: '',  text: 'Input:       /dev/input/event0  [USB HID Keyboard]' },
+      { type: 'blank' },
+      { type: 'cmd',  prompt: 'root@rk3568:/# ', text: 'Simple Terminal --list-sessions' },
+      { type: 'out',  cls: 'c', text: '  SESSION  TTY    PID    SHELL  STATUS' },
+      { type: 'out',  cls: '',  text: '  0 *      tty1   1024   bash   active' },
+      { type: 'out',  cls: '',  text: '  1        tty2   1089   sh     idle' },
+      { type: 'out',  cls: '',  text: '  2        tty3   -      -      empty' },
+      { type: 'blank' },
+      { type: 'cmd',  prompt: 'root@rk3568:/# ', text: 'cat /proc/meminfo | grep MemAvail' },
+      { type: 'out',  cls: 'y', text: 'MemAvailable:       28492 kB' },
+      { type: 'blank' },
+      { type: 'cmd',  prompt: 'root@rk3568:/# ', text: 'htop' },
+      { type: 'out',  cls: 'p', text: '  CPU[########.............. 32%]' },
+      { type: 'out',  cls: 'p', text: '  Mem[###..................   8%]  26.4M/32M' },
+    ];
+
+    let lineIdx = 0, charIdx = 0, pauseCount = 0;
+
+    function tick() {
+      if (lineIdx >= lines.length) {
+        pauseCount++;
+        if (pauseCount > 60) {
+          drawnLines.length = 0;
+          lineIdx = 0; charIdx = 0; pauseCount = 0;
+          setTimeout(tick, 600);
+        } else {
+          setTimeout(tick, 80);
+        }
+        return;
+      }
+
+      const line = lines[lineIdx];
+
+      if (line.type === 'blank') {
+        drawnLines.push({ type: 'blank' });
+        lineIdx++;
+        redraw();
+        setTimeout(tick, 180);
+        return;
+      }
+
+      if (line.type === 'out') {
+        drawnLines.push({ type: 'out', cls: line.cls, text: toAscii(line.text) });
+        lineIdx++;
+        redraw();
+        setTimeout(tick, 55 + Math.random() * 30);
+        return;
+      }
+
+      // cmd — type char by char
+      if (charIdx === 0) {
+        drawnLines.push({ type: 'cmd', prompt: line.prompt, text: '', cursor: true });
+      }
+      const cur = drawnLines[drawnLines.length - 1];
+      if (charIdx < line.text.length) {
+        cur.text = line.text.slice(0, charIdx + 1);
+        charIdx++;
+        redraw();
+        setTimeout(tick, 55 + Math.random() * 50);
+      } else {
+        cur.cursor = false;
+        lineIdx++;
+        charIdx = 0;
+        redraw();
+        setTimeout(tick, 380);
+      }
+    }
+
+    redraw();
+    setTimeout(tick, 900);
+  })();
+
+  /* ── Background: scrolling terminal streams ─────────────────────────── */
+  (function () {
+    const canvas = document.getElementById('bgCanvas');
+    const ctx    = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const FS   = 11;
+    const LH   = 15;
+    const FONT = `${FS}px "JetBrains Mono","Fira Code",Consolas,monospace`;
+
+    const POOL = [
+      '$ simple-terminal --version',
+      'simple-terminal v2.4.1  arm-linux-gnueabihf',
+      'Framebuffer: /dev/fb0  1280x800 32bpp',
+      '$ simple-terminal --list-sessions',
+      'SESSION  TTY   PID   SHELL  STATUS',
+      '0 *  tty1  1024  bash   active',
+      '1    tty2  1089  sh     idle',
+      '2    tty3  —     —      empty',
+      '$ ls -la /dev/fb*',
+      'crw-rw---- 1 root video /dev/fb0',
+      '$ fbset -s',
+      'mode "1280x800-60"',
+      '  geometry 1280 800 1280 800 32',
+      '  timings 0 0 0 0 0 0 0',
+      '$ cat /proc/meminfo | grep Mem',
+      'MemTotal:    32768 kB',
+      'MemFree:     18492 kB',
+      'MemAvailable: 28492 kB',
+      '$ evtest /dev/input/event0',
+      'Input device: HID USB Keyboard',
+      'Event: EV_KEY  KEY_ENTER',
+      '$ dmesg | grep -i fb',
+      '[  3.241] fb0: simple-framebuffer',
+      '[  3.242] simple-terminal: framebuffer acquired',
+      '[  3.243] simple-terminal: input opened event0',
+      '$ simple-terminal --session new',
+      'Session 1 created on /dev/tty2',
+      '$ uname -r',
+      '5.10.160-buildroot-rk3568',
+      '$ cat /etc/simple-terminal.conf',
+      '[framebuffer]',
+      'device = /dev/fb0',
+      'depth  = 32',
+      '[input]',
+      'device = /dev/input/event0',
+      '[font]',
+      'id     = embedded_font1',
+      'width  = 6   height = 6',
+      '[sessions]',
+      'count        = 3',
+      'default_shell = /bin/bash',
+      '$ ps aux | grep simple-terminal',
+      'root  1024  0.1  0.4  simple-terminal --fb /dev/fb0',
+      '$ cat /sys/class/graphics/fb0/bits_per_pixel',
+      '32',
+      '$ cat /sys/class/graphics/fb0/virtual_size',
+      '1280,800',
+      '$ free -m',
+      '       total  used  free  shared',
+      'Mem:      32    14    18       0',
+      'Swap:      0     0     0       0',
+      '$ strace -p 1024 -e write,mmap',
+      'mmap(0xb2000000, 4096000, PROT_READ|PROT_WRITE)',
+      'write(3, "\\033[2J\\033[H", 7) = 7',
+      '$ hexdump -C /dev/fb0 | head -3',
+      '00000000  0a 0c 10 0a 0c 10 0a 0c  |........|',
+      '00000008  10 0a 0c 10 0a 0c 10 0a  |........|',
+      '$ file /usr/bin/simple-terminal',
+      '/usr/bin/simple-terminal: ELF 32-bit LSB executable',
+      'ARM, EABI5, statically linked',
+      '$ size /usr/bin/simple-terminal',
+      ' text   data    bss    dec filename',
+      '1642120  18432   8192  1668744 simple-terminal',
+    ];
+
+    const numCols = Math.max(5, Math.floor(window.innerWidth / 155));
+
+    const cols = Array.from({ length: numCols }, () => ({
+      x:       0,
+      y:       0,
+      speed:   0,
+      start:   0,
+      opacity: 0,
+      hue:     true,
+    }));
+
+    function initCol(col, i) {
+      const slotW = canvas.width / numCols;
+      col.x       = i * slotW + 8 + Math.random() * slotW * 0.35;
+      col.y       = -Math.random() * canvas.height * 1.8;
+      col.speed   = 0.18 + Math.random() * 0.32;
+      col.start   = Math.floor(Math.random() * POOL.length);
+      col.opacity = 0.025 + Math.random() * 0.038;
+      col.hue     = Math.random() > 0.3; // green vs cyan
+    }
+
+    cols.forEach((c, i) => initCol(c, i));
+    window.addEventListener('resize', () => { resize(); cols.forEach(initCol); });
+
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font         = FONT;
+      ctx.textBaseline = 'top';
+
+      const totalH = POOL.length * LH;
+
+      cols.forEach((col, i) => {
+        col.y += col.speed;
+        if (col.y > canvas.height + 60) initCol(col, i);
+
+        ctx.fillStyle  = col.hue ? '#00ffa3' : '#00d4ff';
+        ctx.globalAlpha = col.opacity;
+
+        for (let j = 0; j < POOL.length; j++) {
+          const y = col.y + j * LH;
+          if (y < -LH || y > canvas.height + LH) continue;
+          ctx.fillText(POOL[(col.start + j) % POOL.length], col.x, y);
+        }
+      });
+
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+  })();
+</script>
+
+</body>
+</html>
