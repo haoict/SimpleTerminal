@@ -479,6 +479,71 @@ void x_clear(int x1, int y1, int x2, int y2) {
     SDL_FillRect(main_window.surface, &r, SDL_MapRGB(main_window.surface->format, c.r, c.g, c.b));
 }
 
+static void utf8_to_ascii_fallback(const char *src, int src_len, char *dst, int dst_size) {
+    int i = 0, di = 0;
+    long u;
+
+    while (i < src_len && di + 1 < dst_size) {
+        int sl = utf8_size((char *)&src[i]);
+        if (sl <= 0 || i + sl > src_len) {
+            break;
+        }
+
+        utf8_decode((char *)&src[i], &u);
+
+        if (u < 0x80) {
+            dst[di++] = (char)u;
+        } else {
+            switch (u) {
+                case 0x2500: /* ─ */
+                case 0x2501: /* ━ */
+                case 0x2504: /* ┄ */
+                case 0x2505: /* ┅ */
+                case 0x2508: /* ┈ */
+                case 0x2509: /* ┉ */
+                case 0x2550: /* ═ */
+                    dst[di++] = '-';
+                    break;
+                case 0x2502: /* │ */
+                case 0x2503: /* ┃ */
+                case 0x2506: /* ┆ */
+                case 0x2507: /* ┇ */
+                case 0x250A: /* ┊ */
+                case 0x250B: /* ┋ */
+                case 0x2551: /* ║ */
+                    dst[di++] = '|';
+                    break;
+                case 0x250C: /* ┌ */
+                case 0x2510: /* ┐ */
+                case 0x2514: /* └ */
+                case 0x2518: /* ┘ */
+                case 0x251C: /* ├ */
+                case 0x2524: /* ┤ */
+                case 0x252C: /* ┬ */
+                case 0x2534: /* ┴ */
+                case 0x253C: /* ┼ */
+                case 0x2554: /* ╔ */
+                case 0x2557: /* ╗ */
+                case 0x255A: /* ╚ */
+                case 0x255D: /* ╝ */
+                case 0x2560: /* ╠ */
+                case 0x2563: /* ╣ */
+                case 0x2566: /* ╦ */
+                case 0x2569: /* ╩ */
+                case 0x256C: /* ╬ */
+                    dst[di++] = '+';
+                    break;
+                default:
+                    dst[di++] = 7;
+                    break;
+            }
+        }
+
+        i += sl;
+    }
+    dst[di] = '\0';
+}
+
 void x_draws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
     int winx = borderpx + x * main_window.char_width, winy = borderpx + y * main_window.char_height, width = charlen * main_window.char_width;
     // TTF_Font *font = drawing_ctx.font;
@@ -568,7 +633,13 @@ void x_draws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
             draw_string_ttf(main_window.surface, s, winx, winy, *fg, *bg);
         } else {
             // Use bitmap rendering
-            draw_string(main_window.surface, s, winx, ys, SDL_MapRGB(main_window.surface->format, fg->r, fg->g, fg->b), embedded_font_name);
+            if (bytelen > charlen) {
+                char ascii_buf[DRAW_BUF_SIZ];
+                utf8_to_ascii_fallback(s, bytelen, ascii_buf, sizeof(ascii_buf));
+                draw_string(main_window.surface, ascii_buf, winx, ys, SDL_MapRGB(main_window.surface->format, fg->r, fg->g, fg->b), embedded_font_name);
+            } else {
+                draw_string(main_window.surface, s, winx, ys, SDL_MapRGB(main_window.surface->format, fg->r, fg->g, fg->b), embedded_font_name);
+            }
         }
     }
 
