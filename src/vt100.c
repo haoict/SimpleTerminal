@@ -36,6 +36,7 @@ STREscape strescseq;
 int cmdfd;
 int iofd = -1;
 static pid_t pid;
+static char last_char[UTF_SIZ]; /* Last character for repeat command */
 
 /* UTF-8 functions */
 int utf8_decode(char *s, long *u) {
@@ -479,14 +480,14 @@ void csi_parse(void) {
     char *p = csiescseq.buf;
 
     csiescseq.narg = 0;
-    if (*p == '?') csiescseq.priv = 1, p++;
+    if (*p == '?' || *p == '>' || *p == '!') csiescseq.priv = 1, p++;
 
     while (p < csiescseq.buf + csiescseq.len) {
         while (isdigit(*p)) {
             csiescseq.arg[csiescseq.narg] *= 10;
             csiescseq.arg[csiescseq.narg] += *p++ - '0' /*, noarg = 0 */;
         }
-        if (*p == ';' && csiescseq.narg + 1 < ESC_ARG_SIZ) {
+        if (((*p == ';') || (*p == ':')) && csiescseq.narg + 1 < ESC_ARG_SIZ) {
             csiescseq.narg++, p++;
         } else {
             csiescseq.mode = *p;
@@ -640,14 +641,19 @@ void t_set_attr(int *attr, int l) {
                 break;
             case 38:
                 if (i + 2 < l && attr[i + 1] == 5) {
+                    /* 256-color mode: 38;5;N */
                     i += 2;
                     if (BETWEEN(attr[i], 0, 255)) {
                         term.c.attr.fg = attr[i];
                     } else {
                         fprintf(stderr, "erresc: bad fgcolor %d\n", attr[i]);
                     }
-                } else {
-                    fprintf(stderr, "erresc(38): gfx attr %d unknown\n", attr[i]);
+                } else if (i + 4 < l && attr[i + 1] == 2) {
+                    /* RGB color mode: 38;2;R;G;B - silently use first color component */
+                    i += 4;
+                    if (BETWEEN(attr[i - 2], 0, 255)) {
+                        term.c.attr.fg = attr[i - 2];  /* Use R component as palette index */
+                    }
                 }
                 break;
             case 39:
@@ -655,14 +661,19 @@ void t_set_attr(int *attr, int l) {
                 break;
             case 48:
                 if (i + 2 < l && attr[i + 1] == 5) {
+                    /* 256-color mode: 48;5;N */
                     i += 2;
                     if (BETWEEN(attr[i], 0, 255)) {
                         term.c.attr.bg = attr[i];
                     } else {
                         fprintf(stderr, "erresc: bad bgcolor %d\n", attr[i]);
                     }
-                } else {
-                    fprintf(stderr, "erresc(48): gfx attr %d unknown\n", attr[i]);
+                } else if (i + 4 < l && attr[i + 1] == 2) {
+                    /* RGB color mode: 48;2;R;G;B - silently use first color component */
+                    i += 4;
+                    if (BETWEEN(attr[i - 2], 0, 255)) {
+                        term.c.attr.bg = attr[i - 2];  /* Use R component as palette index */
+                    }
                 }
                 break;
             case 49:
@@ -678,7 +689,7 @@ void t_set_attr(int *attr, int l) {
                 } else if (BETWEEN(attr[i], 100, 107)) {
                     term.c.attr.bg = attr[i] - 100 + 8;
                 } else {
-                    fprintf(stderr, "erresc(default): gfx attr %d unknown\n", attr[i]), csi_dump();
+                    // fprintf(stderr, "erresc(default): gfx attr %d unknown\n", attr[i]), csi_dump();
                 }
                 break;
         }
@@ -774,14 +785,15 @@ void t_set_mode(bool priv, bool set, int *args, int narg) {
                 case 2004: /* bracketed paste mode */
                     // MODBIT(term.mode, set, MODE_BRACKETPASTE);
                     break;
+                case 3: /* DECCOLM -- Column (NOT SUPPORTED) */
+                case 4: /* DECSCLM -- Scroll (NOT SUPPORTED) */
+                case 69: /* DECVCCM -- Vertical cursor coupling (NOT SUPPORTED) */
+                case 1006: /* SGR mouse (NOT SUPPORTED) */
+                case 1015: /* URXVT mouse (NOT SUPPORTED) */
+                    /* Silently ignore unsupported modes */
+                    break;
                 default:
-                    /* case 2:  DECANM -- ANSI/VT52 (NOT SUPPOURTED) */
-                    /* case 3:  DECCOLM -- Column  (NOT SUPPORTED) */
-                    /* case 4:  DECSCLM -- Scroll (NOT SUPPORTED) */
-                    /* case 18: DECPFF -- Printer feed (NOT SUPPORTED) */
-                    /* case 19: DECPEX -- Printer extent (NOT SUPPORTED) */
-                    /* case 42: DECNRCM -- National characters (NOT SUPPORTED) */
-                    fprintf(stderr, "erresc: unknown private set/reset mode %d\n", *args);
+                    /* Other unknown modes - silently ignore */
                     break;
             }
         } else {
@@ -800,7 +812,7 @@ void t_set_mode(bool priv, bool set, int *args, int narg) {
                     MODBIT(term.mode, set, MODE_CRLF);
                     break;
                 default:
-                    fprintf(stderr, "erresc: unknown set/reset mode %d\n", *args);
+                    /* Silently ignore unknown modes */
                     break;
             }
         }
@@ -854,7 +866,7 @@ void csi_handle(void) {
             t_move_to(term.c.x, term.c.y + csiescseq.arg[0]);
             break;
         case 'c': /* DA -- Device Attributes */
-            if (csiescseq.arg[0] == 0) tty_write(VT102ID, sizeof(VT102ID) - 1);
+            /* Don't respond to DA queries to avoid issues */
             break;
         case 'C': /* CUF -- Cursor <n> Forward */
         case 'a':
@@ -912,6 +924,13 @@ void csi_handle(void) {
                     break;
                 case 2: /* all */
                     t_clear_region(0, 0, term.col - 1, term.row - 1);
+                    break;
+                case 3: /* all including scrollback */
+                    t_clear_region(0, 0, term.col - 1, term.row - 1);
+                    /* Clear scrollback buffer */
+                    term.scrollback_count = 0;
+                    term.scrollback_pos = 0;
+                    term.scroll_offset = 0;
                     break;
                 default:
                     goto unknown;
@@ -991,6 +1010,28 @@ void csi_handle(void) {
             break;
         case 'u': /* DECRC -- Restore cursor position (ANSI.SYS) */
             t_cursor(CURSOR_LOAD);
+            break;
+        case 'n': /* DSR -- Device Status Report */
+            if (csiescseq.arg[0] == 6) {
+                /* Report cursor position: ESC[row;colR */
+                char buf[32];
+                snprintf(buf, sizeof(buf), "\033[%d;%dR", term.c.y + 1, term.c.x + 1);
+                tty_write(buf, strlen(buf));
+            }
+            break;
+        case 'p': /* DECSTR -- Soft Terminal Reset (ESC[!p) */
+            if (csiescseq.priv) {
+                /* Reset terminal to initial state */
+                t_reset();
+            }
+            break;
+        case 'b': /* REP -- Repeat last character n times */
+            DEFAULT(csiescseq.arg[0], 1);
+            while (csiescseq.arg[0]-- > 0) {
+                t_putc(last_char, utf8_size(last_char));
+            }
+            break;
+        case '%': /* Ignore malformed sequences */
             break;
     }
 }
@@ -1242,6 +1283,8 @@ void t_putc(char *c, int len) {
     if (control && !(term.c.attr.mode & ATTR_GFX)) return;
     if (IS_SET(MODE_WRAP) && term.c.state & CURSOR_WRAPNEXT) t_newline(1); /* always go to first col */
     t_set_char(c, &term.c.attr, term.c.x, term.c.y);
+    /* Store last character for repeat command */
+    memcpy(last_char, c, len);
     if (term.c.x + 1 < term.col)
         t_move_to(term.c.x + 1, term.c.y);
     else
