@@ -178,9 +178,8 @@ void exec_sh(void) {
 
     // executing opt_cmd
     for (int i = 0; i < opt_cmd_size; i++) {
-        char echo_cmd[255];
-        sprintf(echo_cmd, "echo '\n$ %s\n'", opt_cmd[i]);
-        system(echo_cmd);
+        printf("\n$ %s\n", opt_cmd[i]);
+        fflush(stdout);
         system(opt_cmd[i]);
     }
 
