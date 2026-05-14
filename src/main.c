@@ -29,7 +29,7 @@
 #include "keyboard.h"
 #include "vt100.h"
 
-#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1|2] [-rotate 0|90|180|270] [-o file] [-q] [-r command ...]\n"
+#define USAGE "Simple Terminal\nusage: simple-terminal [-h] [-scale 2.0] [-font font.ttf] [-fontsize 14] [-fontshade 0|1|2] [-rotate 0|90|180|270] [-term xterm-256color|xterm|linux|vt100...] [-o file] [-q] [-r command ...]\n"
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
@@ -147,6 +147,7 @@ SDL_Thread *thread = NULL;
 char **opt_cmd = NULL;
 int opt_cmd_size = 0;
 char *opt_io = NULL;
+char *opt_term = NULL;  /* override TERM environment variable */
 
 static int embedded_font_name = 1;  // 1 or 2
 static volatile int thread_should_exit = 0;
@@ -1282,6 +1283,15 @@ int main(int argc, char *argv[]) {
             }
             continue;
         }
+        if (strcmp(argv[i], "-term") == 0) {
+            if (++i < argc) {
+                opt_term = argv[i];
+            } else {
+                fprintf(stderr, "Missing argument for -term\n");
+                die(USAGE);
+            }
+            continue;
+        }
         if (strcmp(argv[i], "-useEmbeddedFontForKeyboard") == 0) {
             if (++i < argc) {
                 opt_use_embedded_font_for_keyboard = atoi(argv[i]);
@@ -1327,6 +1337,13 @@ int main(int argc, char *argv[]) {
         int content_h = main_window.surface ? main_window.surface->h : main_window.height;
         t_new((content_w - borderpx) / main_window.char_width, (content_h - borderpx) / main_window.char_height);
     }
+
+    if (opt_term != NULL) {
+        termname = opt_term;
+    } else {
+        termname = "linux";
+    }
+    
     tty_new();
     create_tty_thread();
     scale_to_size((int)(main_window.width / opt_scale), (int)(main_window.height / opt_scale));
