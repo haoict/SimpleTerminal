@@ -1,4 +1,14 @@
 {
+  "github": {
+    "enabled": true,
+    "silent": true
+  },
+  "git": {
+    "deploymentEnabled": {
+      "master": true,
+      "*": false
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
