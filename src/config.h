@@ -17,8 +17,8 @@ static int opt_use_embedded_font_for_keyboard = 0;
 
 static const Uint32 BUTTON_HELD_DELAY = 150;  // milliseconds between button triggers when held
 
-/* TERM value */
-char termname[] = "xterm";
+/* TERM value - defaults to xterm-256color but can be overridden */
+char *termname = NULL;  /* Will be set in main() - initialized to default if not overridden */
 
 unsigned int tabspaces = 4;
 

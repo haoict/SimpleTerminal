@@ -20,7 +20,7 @@ extern unsigned int defaultfg;
 extern unsigned int defaultbg;
 extern unsigned int tabspaces;
 extern char default_shell[];
-extern char termname[];
+extern char *termname;
 extern int scrollback_lines;
 
 /* External variables from main.c */
