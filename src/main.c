@@ -33,8 +33,7 @@
 
 /* Arbitrary sizes */
 #define DRAW_BUF_SIZ 20 * 1024
-
-#define REDRAW_TIMEOUT (80 * 1000) /* 80 ms */
+// #define REDRAW_TIMEOUT (80 * 1000) /* 80 ms */
 
 /* macros */
 #define TIMEDIFF(t1, t2) ((t1.tv_sec - t2.tv_sec) * 1000 + (t1.tv_usec - t2.tv_usec) / 1000)
@@ -227,11 +226,19 @@ void sdl_shutdown(void) {
 
 void window_event_handler(SDL_Event *event) {
 #ifdef BR2
-    return;  // no resize for BR2 handheld devices builds because of kms video driver
+    return;  // no window events for BR2 handheld devices builds because of kms video driver
 #endif
     switch (event->window.event) {
         case SDL_WINDOWEVENT_RESIZED:
-            scale_to_size(event->window.data1, event->window.data2);
+            scale_to_size((int)(event->window.data1 / opt_scale), (int)(event->window.data2 / opt_scale));
+            break;
+        case SDL_WINDOWEVENT_FOCUS_GAINED:
+            main_window.state |= WIN_FOCUSED;
+            // redraw();  // redraw to update cursor color
+            break;
+        case SDL_WINDOWEVENT_FOCUS_LOST:
+            main_window.state &= ~WIN_FOCUSED;
+            //redraw();  // redraw to update cursor color
             break;
         default:
             break;
@@ -239,7 +246,7 @@ void window_event_handler(SDL_Event *event) {
 }
 
 void scale_to_size(int width, int height) {
-    if (width <= 0 || height <= 0 || width > 8192 || height > 8192) return;
+    if (width <= 100 || height <= 80 || width > 8192 || height > 8192) return;
     main_window.width = width;
     main_window.height = height;
     printf("Set scale to size: %dx%d (x%.1f)\n", main_window.width, main_window.height, opt_scale);
@@ -277,6 +284,7 @@ void scale_to_size(int width, int height) {
     t_resize(col, row);
     x_resize(col, row);
     tty_resize();
+    redraw();
 }
 
 void sdl_init(void) {
@@ -315,7 +323,7 @@ void sdl_init(void) {
         printf("Setting resolution to: %dx%d\n", main_window.width, main_window.height);
     }
 
-    main_window.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, main_window.width, main_window.height, SDL_WINDOW_SHOWN);
+    main_window.window = SDL_CreateWindow("Simple Terminal", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, main_window.width, main_window.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
     if (!main_window.window) {
         fprintf(stderr, "Unable to create window: %s\n", SDL_GetError());
         exit(EXIT_FAILURE);
@@ -686,11 +694,10 @@ void x_draw_cursor(void) {
 }
 
 void redraw(void) {
-    struct timespec tv = {0, REDRAW_TIMEOUT * 1000};
-
+    //struct timespec tv = {0, REDRAW_TIMEOUT * 1000};
     t_full_dirt();
     draw();
-    nanosleep(&tv, NULL);
+    //nanosleep(&tv, NULL);
 }
 
 void draw(void) {
@@ -1066,14 +1073,8 @@ void main_loop(void) {
                 continue;  // skip mouse events
             }
             if (ev.type == SDL_WINDOWEVENT) {
-                // if (ev.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-                //     main_window.state |= WIN_FOCUSED;
-                //     draw();  // redraw to update cursor color
-                // } else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-                //     main_window.state &= ~WIN_FOCUSED;
-                //     draw();  // redraw to update cursor color
-                // }
-                continue;  // skip other window events for now
+                window_event_handler(&ev);
+                continue;
             }
 
             if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
