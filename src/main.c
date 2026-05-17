@@ -1084,6 +1084,21 @@ void main_loop(void) {
                     // printf("OSK handled the event.\n");
                 } else {
                     // printf("OSK passing event to default handler.\n");
+                    if (ev.type == SDL_KEYDOWN) {
+                        if (ev.key.keysym.sym == SDLK_v) {
+                            const Uint8* state = SDL_GetKeyboardState(NULL);
+                            // Check for Ctrl AND Shift being pressed
+                            bool ctrlPressed = state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL];
+                            bool shiftPressed = state[SDL_SCANCODE_LSHIFT] || state[SDL_SCANCODE_RSHIFT];
+                            if (ctrlPressed && shiftPressed) {
+                                char* clipboardText = SDL_GetClipboardText();
+                                if (clipboardText) {
+                                    tty_write(clipboardText, strlen(clipboardText));
+                                    SDL_free(clipboardText); // Free memory
+                                }
+                            }
+                        }
+                    }
                     if (event_handler[ev.type]) (event_handler[ev.type])(&ev);
                 }
 
