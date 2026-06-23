@@ -123,7 +123,7 @@ podman run --rm -it \
 
 ## To edit embedded bitmap font
 
-https://simple-terminal-psi.vercel.app
+https://simple-terminal.vercel.app/embedded-font-editor
 
 # License & Credits
 
